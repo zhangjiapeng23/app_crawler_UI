@@ -1,15 +1,15 @@
-platformName: ""
-app: ""
-appPackage: ""
-appActivity: ""
-projectName: ""
+platformName: "Android"
+app: "/Users/zhangjiapeng/Mobile/NBA/Android/app/build/outputs/apk/protestSib/release/app-protest-sib-release.apk"
+appPackage: "com.nbaimd.gametime.nba2011"
+appActivity: "com.neulion.nba.base.LaunchDispatcherActivity"
+projectName: "NBA"
 appiumPort: "4723"
 automationName: "Uiautomator2"
 noReset: True
 autoGrantPermissions: True
 blackActivities: [".*ChooserActivity.*", ".*BrowserActivity.*", ".*NBASibActivity.*"]
-blackElements: [".*id/ad.*container.*", ".*dtbAd.*", ".*android.widget.Toast.*", ".*_ad_.*"]
+blackElements: [".*id/ad.*container.*", ".*dtbAd.*", ".*android.widget.Toast.*"]
 whiteElements: [".*android:id/button1.*", ".*bottom_menu_title.*", ".*id/account.*", ".*id/settings.*"]
 lastElements: ["com.nbaimd.gametime.nba2011:id/bottom_menu_title", "com.nbaimd.gametime.nba2011:id/bottom_menu_icon"]
-whiteApps: [".*packageinstaller.*"]
+whiteApps: ["com.neulion.nba", "com.nbaimd.gametime.nba2011", ".*packageinstaller.*"]
 baseActivities: [".*nba.*Main.*", ".*Splash.*", ".*LaunchDispatcher.*"]
