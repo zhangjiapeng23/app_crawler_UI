@@ -2,9 +2,13 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
+import threading
+
+from selenium.common.exceptions import InvalidSessionIdException
 
 from crawler import Crawler
 from config_util import Config
+from log import log
 
 
 def print_spider():
@@ -41,9 +45,20 @@ def print_spider():
         print(' ' * (18 + i * 2) + '*' + ' ' * (25 - i * 4) + '*')
 
 
+def execute_timer(total_time, func):
+    timer = threading.Timer(interval=total_time*60, function=func)
+    log.info("Timer start work!!")
+    timer.start()
+
+
 if __name__ == '__main__':
     print_spider()
     config = Config('config/NBA_Android_config.yml')
-    spider = Crawler(config)
-    while True:
-        spider.run()
+    spider = Crawler(config, 2)
+    execute_timer(spider.timer, spider.quit)
+    try:
+        while True:
+            spider.run()
+    except InvalidSessionIdException:
+        log.error('test end!')
+
