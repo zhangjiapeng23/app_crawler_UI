@@ -100,8 +100,7 @@ class XpathParse:
         else:
             return "*"
 
-    @staticmethod
-    def generate_element_uid(node_attrib: dict):
+    def generate_element_uid(self, node_attrib: dict):
         uid = ''
         invalid_list = {None, '', 'false'}
         # 'index'
@@ -113,6 +112,7 @@ class XpathParse:
             value = node_attrib.get(attrib)
             if value not in invalid_list:
                 uid += value
+            uid = self.__page.current_activity + ':' + uid
         return uid
 
 
