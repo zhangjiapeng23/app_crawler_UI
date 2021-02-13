@@ -11,14 +11,19 @@ from xpath_util import XpathParse
 
 class PageParse:
 
-    def __init__(self, page_source):
+    def __init__(self, page_source, page_activity=None):
         element_obj = etree.fromstring(page_source.encode('utf-8'))
         dom_obj = etree.ElementTree(element_obj)
         self.__current_page_root = dom_obj.getroot()
+        self.__current_activity = page_activity
 
     @property
     def current_page_root(self):
         return self.__current_page_root
+
+    @property
+    def current_activity(self):
+        return self.__current_activity
 
     def __eq__(self, other):
         if isinstance(other, PageParse):
