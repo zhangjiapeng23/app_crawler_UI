@@ -3,7 +3,7 @@
 # @author: James Zhang
 # @data  : 2021/2/10
 
-from collections import deque
+from collections import deque, defaultdict
 import re
 
 from func_timeout import func_set_timeout
@@ -18,21 +18,27 @@ from log import log
 
 class Crawler:
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, timer=1):
         max_page_depth = config.config.get('max_depth')
         self.page_stack = deque(maxlen=max_page_depth) if max_page_depth else deque(maxlen=3)
         self.seen = set()
-        self.white_apps = config.white_apps()
-        self.black_elements = config.black_elements()
-        self.black_activities = config.black_activities()
-        self.white_elements = config.white_elements()
-        self.base_activities = config.base_activities()
-        self.last_elements = config.last_elements()
+        self.__config = config
+        self.white_apps = self.__config.white_apps()
+        self.black_elements = self.__config.black_elements()
+        self.black_activities = self.__config.black_activities()
+        self.white_elements = self.__config.white_elements()
+        self.base_activities = self.__config.base_activities()
+        self.last_elements = self.__config.last_elements()
         self.driver = Appium(desired_caps=config.appium_desired_caps())
         self.__current_page = None
+        self.__record = defaultdict(list)
+        self.__timer = timer
 
     def __call__(self):
         self.run()
+
+    def __repr__(self):
+        return '{}<{}>'.format(type(self).__name__, self.__config.projectName)
 
     @func_set_timeout(5)
     def __get_page_source(self):
@@ -50,27 +56,36 @@ class Crawler:
         return None
 
     def get_page_info(self):
+        '''
+        Returns:
+            page: PageParse class instance.
+            current_activity: string
+        '''
         current_page_source = self.get_page_source()
-        current_activity = self.driver.get_current_activity()
-        page = PageParse(current_page_source)
-        return page, current_activity
+        if not current_page_source:
+            self.driver.click_device_back()
+            return self.get_page_info()
+        else:
+            current_activity = self.driver.get_current_activity()
+            page = PageParse(current_page_source, current_activity)
+            return page
 
     def run(self):
         if not self.page_stack:
             self.page_stack.append(self.get_page_info())
 
         while self.page_stack:
-            page, activity = self.page_stack.pop()
+            page = self.page_stack.pop()
             if page == self.__current_page:
                 res = self.crawl_page(page)
                 if res != 'END':
-                    if self.__is_base_activity(res[1]):
+                    if self.__is_base_activity(res[0].current_activity):
                         self.page_stack.clear()
                     else:
                         # put current page into stack
-                        self.page_stack.append((res[2], activity))
+                        self.page_stack.append(res[1])
                     # put new page into stack
-                    self.page_stack.append((res[0], res[1]))
+                    self.page_stack.append(res[0])
 
     def crawl_page(self, xpath_generator):
         if not isinstance(xpath_generator, XpathParse):
@@ -103,9 +118,9 @@ class Crawler:
             else:
                 self.driver.load_long_page_content(times=2)
                 self.driver.pull_refresh_page()
-                current_page, current_activity = self.get_page_info()
+                current_page = self.get_page_info()
                 if current_page != self.__xpath_generator:
-                    return current_page, current_activity, self.__xpath_generator
+                    return current_page, self.__xpath_generator
 
         log.debug("Current page crawler over!")
         if not self.__is_base_activity(self.driver.get_current_activity()):
@@ -123,16 +138,18 @@ class Crawler:
                 except Exception as err:
                     log.error("element click error! {}".format(err))
                 else:
-                    log.error("click a element! Path: {}".format(xpath))
+                    # log.error("click a element! Path: {}".format(xpath))
+                    self.__statistics(xpath, node_uid)
+
                     if not self.__is_white_element(node_uid):
                         self.seen.add(node_uid)
 
                         self.__after_click()
 
                         # judge page is change
-                        current_page, current_activity = self.get_page_info()
+                        current_page = self.get_page_info()
                         if current_page != self.__xpath_generator:
-                            return current_page, current_activity, self.__xpath_generator
+                            return current_page, self.__xpath_generator
 
     def __after_click(self):
         # check is in black activity
@@ -178,6 +195,19 @@ class Crawler:
                 return True
         return False
 
+    def __statistics(self, xpath, node_uid):
+        activity = node_uid.split(':')[0]
+        self.__record[activity].append(xpath)
+
+    @property
+    def timer(self):
+        return self.__timer
+
+    def quit(self):
+        for key in self.__record.keys():
+            msg = 'activity: {}, total: {}, path: {}'
+            print(msg.format(key, len(self.__record[key]), self.__record[key]))
+        self.driver.quit()
 
 
 
