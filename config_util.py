@@ -18,7 +18,8 @@ class Config:
         config: config file absolute path
     """
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, uid=None):
+        self.__uid = uid
         self.__config_path = config_path
         if not os.path.isfile(self.__config_path):
             raise Exception("Not find a invalid file.")
@@ -58,10 +59,8 @@ class Config:
         desired_caps['resetKeyBoard'] = 'true'
 
         if desired_caps['platformName'] == 'Android':
-            serials = device_info_util.get_serial_numbers_android()
-            udid = serials[0]
-            desired_caps['deviceName'] = device_info_util.get_device_name_android(udid)
-            desired_caps['platformVersion'] = device_info_util.get_device_system_version_android(udid)
+            desired_caps['deviceName'] = device_info_util.get_device_name_android(self.__uid)
+            desired_caps['platformVersion'] = device_info_util.get_device_system_version_android(self.__uid)
             desired_caps['appPackage'] = self.config.get('appPackage')
             desired_caps['appActivity'] = self.config.get('appActivity')
             desired_caps['automationName'] = self.config.get('automationName')
@@ -78,7 +77,7 @@ class Config:
             desired_caps['bundleId'] = self.config.get('bundleId')
             desired_caps['WDAbundleId'] = 'com.apple.test.WebDriverAgentRunner-Runner'
             desired_caps['wdaLocalPort'] = 8200
-        desired_caps['udid'] = udid
+        desired_caps['udid'] = self.__uid
         return desired_caps
 
     def white_apps(self) -> set:

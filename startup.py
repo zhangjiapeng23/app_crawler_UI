@@ -6,6 +6,7 @@ import threading
 
 from selenium.common.exceptions import InvalidSessionIdException
 
+from device_info_util import get_serial_numbers_android, get_serial_numbers_ios
 from crawler import Crawler
 from config_util import Config
 from log import log
@@ -50,15 +51,45 @@ def execute_timer(total_time, func):
     log.info("Timer start work!!")
     timer.start()
 
-
-if __name__ == '__main__':
-    print_spider()
-    config = Config('config/NBA_Android_config.yml')
-    spider = Crawler(config, 2)
+def performer(config_path, serial):
+    config = Config(config_path, uid=serial)
+    spider = Crawler(config, timer)
     execute_timer(spider.timer, spider.quit)
     try:
         while True:
             spider.run()
     except InvalidSessionIdException:
         log.error('test end!')
+
+
+
+if __name__ == '__main__':
+    print_spider()
+    config_path = 'config/NBA_Android_config.yml'
+    timer = 2
+    collector = list()
+
+    config = Config(config_path)
+    devices_list = list()
+    platform = config.platformName
+    if platform == 'Android':
+        devices_list = get_serial_numbers_android()
+    elif platform == 'iOS':
+        devices_list = get_serial_numbers_ios()
+    else:
+        log.error("Not support {} platform".format(platform))
+
+    if not devices_list:
+        log.warning("Not find any device.")
+    else:
+        for serial in devices_list:
+            t = threading.Thread(target=performer, args=(config_path, serial))
+            collector.append(t)
+
+        for t in collector:
+            t.start()
+
+        for t in collector:
+            t.join()
+        log.warning("All test end.")
 
