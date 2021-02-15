@@ -150,7 +150,7 @@ class Appium:
 
     def monkey_actions(self):
         # trigger random actions probability.
-        execute = random.randint(0, 4)
+        execute = random.randint(0, 5)
         if execute == 1:
             event = random.randint(0, 7)
             if event == 0 or event == 1:

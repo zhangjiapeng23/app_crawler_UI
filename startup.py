@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
+
 import threading
 
 from selenium.common.exceptions import InvalidSessionIdException
@@ -51,6 +52,7 @@ def execute_timer(total_time, func):
     log.info("Timer start work!!")
     timer.start()
 
+
 def performer(config_path, serial):
     config = Config(config_path, uid=serial)
     spider = Crawler(config, timer)
@@ -60,7 +62,6 @@ def performer(config_path, serial):
             spider.run()
     except InvalidSessionIdException:
         log.error('test end!')
-
 
 
 if __name__ == '__main__':

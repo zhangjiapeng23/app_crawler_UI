@@ -144,6 +144,9 @@ class Crawler:
                     if not self.__is_white_element(node_uid):
                         self.seen.add(node_uid)
 
+                        # add random actions
+                        self.driver.monkey_actions()
+
                         self.__after_click()
 
                         # judge page is change
