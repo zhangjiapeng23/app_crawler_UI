@@ -2,10 +2,11 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
-
+import base64
 import random
 
 import cv2
+import numpy as np
 from appium import webdriver
 from selenium.common.exceptions import InvalidSessionIdException, WebDriverException
 
@@ -182,6 +183,29 @@ class Appium:
             raise err
         except WebDriverException as err:
             log.error("Screenshot failed! {}".format(err))
+
+    def save_screenshot_as_base64(self, position=None):
+        try:
+            origin = self.__driver.get_screenshot_as_base64()
+            if position:
+                origin = self.screenshot_mark_as_base64(origin, position)
+            return origin
+        except InvalidSessionIdException as err:
+            raise err
+        except WebDriverException as err:
+            log.error("Screenshot failed! {}".format(err))
+
+    @staticmethod
+    def screenshot_mark_as_base64(base64_encode, position):
+        base64_decode = base64.b64decode(base64_encode)
+        nparr = np.fromstring(base64_decode, np.uint8)
+        image = cv2.imdecode(nparr, cv2.COLOR_BGR2RGB)
+        cv2.rectangle(image, position[0], position[1], (0, 0, 255), 5)
+        base64_str = cv2.imencode('.jpg', image)[1].tostring()
+        base64_str = base64.b64encode(base64_str)
+        return base64_str
+
+
 
     def launch_app(self):
         try:

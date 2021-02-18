@@ -12,7 +12,7 @@ from func_timeout.exceptions import FunctionTimedOut
 from page_parse import PageParse
 from config_util import Config
 from appium_util import Appium
-from xpath_util import XpathParse
+from xpath_util import XpathParse, ElementUid
 from log import log
 
 
@@ -94,12 +94,12 @@ class Crawler:
             self.__xpath_generator = xpath_generator
 
         for xpath, node_uid in self.__xpath_generator:
-            if node_uid in self.seen:
+            if node_uid.uid in self.seen:
                 log.info('element {} is seen, skip it.'.format(node_uid))
                 continue
             elif self.__is_black_element(xpath):
                 log.warning("Current element in black list, not click.")
-                self.seen.add(node_uid)
+                self.seen.add(node_uid.uid)
                 continue
             elif self.__is_last_element(xpath):
                 log.warning("Current element in last list, check later.")
@@ -129,20 +129,26 @@ class Crawler:
             log.warning("Current page is base activity.")
         return 'END'
 
-    def __click(self, xpath, node_uid):
+    def __click(self, xpath, node_uid: ElementUid):
         if xpath != '' and xpath[-1] != '*':
             elements = self.driver.find_elements(xpath)
             if len(elements) > 0:
+                # record before click screenshot
+                screenshot_before_click = self.driver.save_screenshot_as_base64(position=node_uid.bounds)
+
                 try:
                     elements[0].click()
                 except Exception as err:
                     log.error("element click error! {}".format(err))
                 else:
-                    # log.error("click a element! Path: {}".format(xpath))
-                    self.__statistics(xpath, node_uid)
+                    # record after click screenshot
+                    screenshot_after_click = self.driver.save_screenshot_as_base64()
 
-                    if not self.__is_white_element(node_uid):
-                        self.seen.add(node_uid)
+                    # log.error("click a element! Path: {}".format(xpath))
+                    self.__statistics(xpath, node_uid.uid, screenshot_before_click, screenshot_after_click)
+
+                    if not self.__is_white_element(node_uid.uid):
+                        self.seen.add(node_uid.uid)
 
                         # add random actions
                         self.driver.monkey_actions()
@@ -198,9 +204,13 @@ class Crawler:
                 return True
         return False
 
-    def __statistics(self, xpath, node_uid):
+    def __statistics(self, xpath, node_uid,
+                     screenshot_base64_before_click, screenshot_base64_after_click):
         activity = node_uid.split(':')[0]
-        self.__record[activity].append(xpath)
+        click_record = {'path': xpath,
+                        'befor_click': screenshot_base64_before_click,
+                        'after_click': screenshot_base64_after_click}
+        self.__record[activity].append(click_record)
 
     @property
     def timer(self):
