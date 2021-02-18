@@ -5,13 +5,15 @@
 
 from config_util import Config
 from appium_util import Appium
+import device_info_util
 
 class TestAppiumUtil:
 
     def setup(self):
         print('Test start.')
         config_path = '/Users/jameszhang/python/project/appCrawler/test/testdata/config/NBA_Android_config.yml'
-        self.config = Config(config_path)
+        uid = device_info_util.get_serial_numbers_android()
+        self.config = Config(config_path, uid[0])
 
     def teardown(self):
         print('Test end.')
