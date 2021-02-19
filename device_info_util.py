@@ -40,7 +40,7 @@ def get_serial_numbers_android():
     serials = []
     cmd = 'adb devices'
     for i in execute_cmd(cmd):
-        if 'List of devices' in i or 'deamon' in i or 'offline' \
+        if 'List of devices' in i or 'daemon' in i or 'offline' \
                 in i or 'unauthorized' in i or len(i) < 5:
             pass
         else:
