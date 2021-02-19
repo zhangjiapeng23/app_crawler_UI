@@ -11,6 +11,13 @@ def execute_cmd(cmd):
     out.communicate(timeout=timeout)
     out.stdout.close()
 
+def kill_adb_server():
+    cmd = 'adb kill-server'
+    res = ''
+    for i in execute_cmd(cmd):
+        res += i
+    return res
+
 
 def get_serial_numbers_ios():
     """

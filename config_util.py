@@ -49,6 +49,7 @@ class Config:
     def appium_desired_caps(self):
         desired_caps = defaultdict(lambda: None)
         desired_caps['platformName'] = self.config.get('platformName')
+        desired_caps['appiumServerUrl'] = self.config.get('appiumServerUrl')
         desired_caps['port'] = self.config.get("appiumPort")
         desired_caps['app'] = self.config.get('app')
         desired_caps['noReset'] = self.config.get("noReset")
