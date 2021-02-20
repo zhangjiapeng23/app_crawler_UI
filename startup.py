@@ -7,7 +7,7 @@ import threading
 
 from selenium.common.exceptions import InvalidSessionIdException
 
-from device_info_util import get_serial_numbers_android, get_serial_numbers_ios
+from device_info_util import get_serial_numbers_android, get_serial_numbers_ios, kill_adb_server
 from crawler import Crawler
 from config_util import Config
 from log import log
@@ -92,5 +92,7 @@ if __name__ == '__main__':
 
         for t in collector:
             t.join()
+
+        kill_adb_server()
         log.warning("All test end.")
 
