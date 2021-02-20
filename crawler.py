@@ -2,8 +2,8 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
-
-from collections import deque, defaultdict
+import time
+from collections import deque, namedtuple
 import re
 
 from func_timeout import func_set_timeout
@@ -16,10 +16,14 @@ from xpath_util import XpathParse, ElementUid
 from log import log
 
 
+
 class Crawler:
+    event_record = namedtuple('event', ['time', 'before_click', 'after_click', 'activity', 'xpath', 'status'])
 
     def __init__(self, config: Config, timer=1):
         max_page_depth = config.config.get('max_depth')
+        crash_traceback = config.config.get('max_screen')
+        self.__crash_traceback = deque(maxlen=crash_traceback) if crash_traceback else deque(maxlen=10)
         self.page_stack = deque(maxlen=max_page_depth) if max_page_depth else deque(maxlen=3)
         self.seen = set()
         self.__config = config
@@ -31,7 +35,7 @@ class Crawler:
         self.last_elements = self.__config.last_elements()
         self.driver = Appium(desired_caps=config.appium_desired_caps())
         self.__current_page = None
-        self.__record = defaultdict(list)
+        self.__record = list()
         self.__timer = timer
 
     def __call__(self):
@@ -207,21 +211,24 @@ class Crawler:
     def __statistics(self, xpath, node_uid,
                      screenshot_base64_before_click, screenshot_base64_after_click):
         activity = node_uid.split(':')[0]
-        click_record = {'path': xpath,
-                        'befor_click': screenshot_base64_before_click,
-                        'after_click': screenshot_base64_after_click}
-        self.__record[activity].append(click_record)
+        event = self.event_record(time=int(time.time()),
+                                  before_click=screenshot_base64_before_click,
+                                  after_click=screenshot_base64_after_click,
+                                  activity=activity,
+                                  xpath=xpath,
+                                  status='pass')
+        self.__record.append(event)
 
     @property
     def timer(self):
         return self.__timer
 
     def quit(self):
-        for key in self.__record.keys():
-            msg = 'activity: {}, total: {}, path: {}'
-            print(msg.format(key, len(self.__record[key]), self.__record[key]))
         self.driver.quit()
 
+    @property
+    def record(self):
+        return self.__record
 
 
 

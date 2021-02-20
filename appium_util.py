@@ -178,6 +178,7 @@ class Appium:
     def save_screenshot(self, path: str, position: tuple):
         try:
             self.__driver.get_screenshot_as_file(path)
+            self.__driver.get_screenshot_as_png()
             self.screenshot_mark(img_path=path, position=position)
         except InvalidSessionIdException as err:
             raise err
@@ -186,24 +187,24 @@ class Appium:
 
     def save_screenshot_as_base64(self, position=None):
         try:
+            # get screen base64.
             origin = self.__driver.get_screenshot_as_base64()
-            if position:
-                origin = self.screenshot_mark_as_base64(origin, position)
-            return origin
+            return self.screenshot_mark_as_base64(origin, position)
         except InvalidSessionIdException as err:
             raise err
         except WebDriverException as err:
             log.error("Screenshot failed! {}".format(err))
 
     @staticmethod
-    def screenshot_mark_as_base64(base64_encode, position):
-        base64_decode = base64.b64decode(base64_encode)
-        nparr = np.fromstring(base64_decode, np.uint8)
-        image = cv2.imdecode(nparr, cv2.COLOR_BGR2RGB)
-        cv2.rectangle(image, position[0], position[1], (0, 0, 255), 5)
-        base64_str = cv2.imencode('.jpg', image)[1].tostring()
-        base64_str = base64.b64encode(base64_str)
-        return base64_str
+    def screenshot_mark_as_base64(base64_string, position=None):
+        if position:
+            base64_decode = base64.b64decode(base64_string)
+            nparr = np.fromstring(base64_decode, np.uint8)
+            image = cv2.imdecode(nparr, cv2.COLOR_BGR2RGB)
+            cv2.rectangle(image, position[0], position[1], (0, 0, 255), 5)
+            img_bytes = cv2.imencode('.png', image)[1].tobytes()
+            base64_string = base64.b64encode(img_bytes)
+        return base64_string
 
 
 

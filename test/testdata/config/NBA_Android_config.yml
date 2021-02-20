@@ -3,6 +3,7 @@ app_: "/Users/zhangjiapeng/Mobile/NBA/Android/app/build/outputs/apk/protestSib/r
 appPackage: "com.nbaimd.gametime.nba2011"
 appActivity: "com.neulion.nba.base.LaunchDispatcherActivity"
 projectName: "NBA"
+appiumServerUrl: ""
 appiumPort: "4723"
 automationName: "Uiautomator2"
 noReset: True

@@ -16,6 +16,9 @@ class TestScreenShot:
         print('test start')
         uid = device_info_util.get_serial_numbers_android()
         config = Config('E:\\app_crawler_UI\\test\\testdata\\config\\NBA_Android_config.yml', uid[0])
+        screenshot = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot')
+        if not os.path.exists(screenshot):
+            os.mkdir(screenshot)
         self.driver = Appium(config.appium_desired_caps())
 
     def teardown(self):
@@ -24,20 +27,20 @@ class TestScreenShot:
 
     def test_screenshot_as_base64(self):
         res = self.driver.save_screenshot_as_base64()
-        png = base64.b64decode(res.encode('ascii'))
+        res = base64.b64decode(res)
+        print(res[:10])
         path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot', str(int(time.time())) + '.png')
         with open(path, 'wb') as f:
-            f.write(png)
+            f.write(res)
 
     def test_screenshot_mark_as_base64(self):
         position = [(200, 200), (100, 100)]
-        orgin_base64 = self.driver.save_screenshot_as_base64()
-        res =self.driver.screenshot_mark_as_base64(orgin_base64, position)
-        print(res)
-        png = base64.b64decode(res)
+        res =self.driver.save_screenshot_as_base64(position)
+        res = base64.b64decode(res)
+        print(res[:10])
         path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot', str(int(time.time())) + '.png')
         with open(path, 'wb') as f:
-            f.write(png)
+            f.write(res)
 
 
 
