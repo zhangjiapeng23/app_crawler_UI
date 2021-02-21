@@ -8,6 +8,8 @@ from collections import deque
 
 
 class XpathParse:
+    # todo: XpathParse should change to iterable, not iterator. add XpathParseIterator
+    # todo: let XpathParse __iter__ return a XpathParseIterator.
 
     def __init__(self, page, seen):
         self.__routing = {}
@@ -100,21 +102,6 @@ class XpathParse:
             return "*[@text=\"%s\"]" % text
         else:
             return "*"
-
-    # def generate_element_uid(self, node_attrib: dict):
-    #     uid = ''
-    #     invalid_list = {None, '', 'false'}
-    #     # 'index'
-    #     attrib_list = ['package', 'class', 'resource-id', 'content-desc',
-    #                    'text', 'checkable', 'checked', 'clickable', 'enabled', 'focusable',
-    #                    'long-clickable', 'password', 'scrollable', 'selected', 'displayed']
-    #
-    #     for attrib in attrib_list:
-    #         value = node_attrib.get(attrib)
-    #         if value not in invalid_list:
-    #             uid += value
-    #         uid = self.__page.current_activity + ':' + uid
-    #     return uid
 
 
 class ElementUid:
