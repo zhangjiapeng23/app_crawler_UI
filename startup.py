@@ -54,7 +54,7 @@ def execute_timer(total_time, func):
 
 
 def performer(config_path, serial):
-    config = Config(config_path, uid=serial)
+    config = Config(config_path, udid=serial)
     spider = Crawler(config, timer)
     execute_timer(spider.timer, spider.quit)
     try:

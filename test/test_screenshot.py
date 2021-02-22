@@ -15,7 +15,9 @@ class TestScreenShot:
     def setup(self):
         print('test start')
         uid = device_info_util.get_serial_numbers_android()
-        config = Config('E:\\app_crawler_UI\\test\\testdata\\config\\NBA_Android_config.yml', uid[0])
+        config_path = os.path.join(os.path.dirname(__file__),
+                                   'testdata', 'config', 'NBA_Android_config.yml')
+        config = Config(config_path, uid[0])
         screenshot = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot')
         if not os.path.exists(screenshot):
             os.mkdir(screenshot)
@@ -29,7 +31,7 @@ class TestScreenShot:
         res = self.driver.save_screenshot_as_base64()
         res = base64.b64decode(res)
         print(res[:10])
-        path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot', str(int(time.time())) + '.png')
+        path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot', str(int(time.time())) + '.jpg')
         with open(path, 'wb') as f:
             f.write(res)
 
@@ -38,11 +40,20 @@ class TestScreenShot:
         res =self.driver.save_screenshot_as_base64(position)
         res = base64.b64decode(res)
         print(res[:10])
-        path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot', str(int(time.time())) + '.png')
+        path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot', str(int(time.time())) + '.jpg')
         with open(path, 'wb') as f:
             f.write(res)
 
+    def test_screenshot_as_jpg(self):
+        path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot')
+        res = self.driver.save_screenshot_as_jpg(screenshot_dir=path)
+        print(res)
 
+    def test_screenshot_mark_as_jpg(self):
+        position = [(200, 200), (100, 100)]
+        path = os.path.join(os.path.dirname(__file__), 'testdata\\screenshot')
+        res = self.driver.save_screenshot_as_jpg(screenshot_dir=path, position=position)
+        print(res)
 
 
 
