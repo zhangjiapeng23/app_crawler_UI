@@ -7,6 +7,7 @@ import os
 from report_util import GenerateJson
 from crawler import Crawler
 
+
 class TestGenerateJson:
 
     def setup(self):

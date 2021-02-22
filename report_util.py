@@ -91,7 +91,7 @@ class GenerateJson:
                 timestamp = int(log.time)
                 position = self.__search(timestamp)
                 event = self.record[position]
-                event = event._replace(status=str(timestamp) + '\n' +log.log)
+                event = event._replace(status=str(timestamp) + '\n' + log.log)
                 self.record[position] = event
 
     def __search(self, timestamp: int):
@@ -107,7 +107,7 @@ class GenerateJson:
             elif event.time > timestamp:
                 right = mid - 1
             elif event.time < timestamp:
-                ans= mid
+                ans = mid
                 left = mid + 1
         else:
             return ans
