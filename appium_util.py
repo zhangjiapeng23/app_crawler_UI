@@ -3,7 +3,9 @@
 # @author: James Zhang
 # @data  : 2021/2/10
 import base64
+import os
 import random
+import time
 
 import cv2
 import numpy as np
@@ -197,14 +199,29 @@ class Appium:
 
     @staticmethod
     def screenshot_mark_as_base64(base64_string, position=None):
+        base64_decode = base64.b64decode(base64_string)
+        nparr = np.fromstring(base64_decode, np.uint8)
+        image = cv2.imdecode(nparr, cv2.COLOR_BGR2RGB)
         if position:
-            base64_decode = base64.b64decode(base64_string)
-            nparr = np.fromstring(base64_decode, np.uint8)
-            image = cv2.imdecode(nparr, cv2.COLOR_BGR2RGB)
             cv2.rectangle(image, position[0], position[1], (0, 0, 255), 5)
-            img_bytes = cv2.imencode('.png', image)[1].tobytes()
-            base64_string = base64.b64encode(img_bytes)
+        img_bytes = cv2.imencode('.jpg', image)[1].tobytes()
+        base64_string = base64.b64encode(img_bytes)
         return base64_string
+
+    def save_screenshot_as_jpg(self, screenshot_dir: str, position=None):
+        screenshot_file = str(int(time.time()))
+        if position:
+            screenshot_file += '_click.jpg'
+        else:
+            screenshot_file += '.jpg'
+        screenshot_base64 = self.save_screenshot_as_base64(position)
+        with open(os.path.join(screenshot_dir, screenshot_file), 'wb') as f:
+            f.write(base64.b64decode(screenshot_base64))
+        return screenshot_file
+
+
+
+
 
 
 
