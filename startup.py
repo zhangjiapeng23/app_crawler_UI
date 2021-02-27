@@ -4,6 +4,7 @@
 # @data  : 2021/2/10
 
 import threading
+from concurrent import futures
 
 from selenium.common.exceptions import InvalidSessionIdException
 
@@ -54,7 +55,7 @@ def execute_timer(total_time, func):
 
 
 def performer(config_path, serial):
-    config = Config(config_path, uid=serial)
+    config = Config(config_path, udid=serial)
     spider = Crawler(config, timer)
     execute_timer(spider.timer, spider.quit)
     try:
@@ -68,6 +69,7 @@ if __name__ == '__main__':
     print_spider()
     config_path = 'config/NBA_Android_config.yml'
     timer = 2
+    max_workers = 5
     collector = list()
 
     config = Config(config_path)
@@ -83,15 +85,10 @@ if __name__ == '__main__':
     if not devices_list:
         log.warning("Not find any device.")
     else:
-        for serial in devices_list:
-            t = threading.Thread(target=performer, args=(config_path, serial))
-            collector.append(t)
-
-        for t in collector:
-            t.start()
-
-        for t in collector:
-            t.join()
+        with futures.ThreadPoolExecutor(max_workers) as executor:
+            futures_list = [executor.submit(performer, config_path, serial) for serial in devices_list]
+            for future in futures.as_completed(futures_list):
+                print(future.result())
 
         kill_adb_server()
         log.warning("All test end.")

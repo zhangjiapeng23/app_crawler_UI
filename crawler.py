@@ -2,6 +2,8 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
+import datetime
+import os
 import time
 from collections import deque, namedtuple
 import re
@@ -37,6 +39,14 @@ class Crawler:
         self.__current_page = None
         self.__record = list()
         self.__timer = timer
+        report_dir = os.path.join(os.path.dirname(__file__), 'report')
+        if not os.path.exists(report_dir):
+            os.mkdir(report_dir)
+        current_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        self.__report_path = os.path.join(report_dir, current_time + '_' + self.__config.udid)
+        os.mkdir(self.__report_path)
+        self.__screenshot_dir = os.path.join(self.__report_path, 'screenshot')
+        os.mkdir(self.__screenshot_dir)
 
     def __call__(self):
         self.run()
@@ -138,7 +148,8 @@ class Crawler:
             elements = self.driver.find_elements(xpath)
             if len(elements) > 0:
                 # record before click screenshot
-                screenshot_before_click = self.driver.save_screenshot_as_base64(position=node_uid.bounds)
+                # screenshot_before_click = self.driver.save_screenshot_as_base64(position=node_uid.bounds)
+                screenshot_before_click = self.driver.save_screenshot_as_jpg(self.__screenshot_dir, node_uid.bounds)
 
                 try:
                     elements[0].click()
@@ -146,7 +157,8 @@ class Crawler:
                     log.error("element click error! {}".format(err))
                 else:
                     # record after click screenshot
-                    screenshot_after_click = self.driver.save_screenshot_as_base64()
+                    # screenshot_after_click = self.driver.save_screenshot_as_base64()
+                    screenshot_after_click = self.driver.save_screenshot_as_jpg(self.__screenshot_dir)
 
                     # log.error("click a element! Path: {}".format(xpath))
                     self.__statistics(xpath, node_uid.uid, screenshot_before_click, screenshot_after_click)
