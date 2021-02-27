@@ -9,11 +9,26 @@ import time
 from collections import namedtuple
 from datetime import datetime
 
+from jinja2 import Environment, PackageLoader
+
 
 class Report:
 
-    def __int__(self):
-        pass
+    def __init__(self, report_name):
+        self.env = Environment(loader=PackageLoader('report_util', 'templates'))
+        self.template = self.env.get_template('report_template.html')
+        self.report_dir = os.path.join(os.path.dirname(__file__), 'reports')
+        if not os.path.exists(self.report_dir):
+            os.mkdir(self.report_dir)
+        self.report_name = os.path.join(self.report_dir, report_name + '.html')
+
+    def generate_report(self):
+        report_content = self.template.render(name='james')
+        with open(self.report_name, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+
+
+
 
 
 class LogAndroid:
