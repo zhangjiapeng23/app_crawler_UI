@@ -16,6 +16,7 @@ from config_util import Config
 from appium_util import Appium
 from xpath_util import XpathParse, ElementUid
 from log import log
+from report_util import LogAndroid
 
 
 
@@ -39,7 +40,13 @@ class Crawler:
         self.__current_page = None
         self.__record = list()
         self.__timer = timer
-        report_dir = os.path.join(os.path.dirname(__file__), 'report')
+
+        # init device crash log, remove cache crash log.
+        self.android_log = LogAndroid(udid=self.__config.udid)
+        self.android_log.clear_log()
+
+        # init report
+        report_dir = os.path.join(os.path.dirname(__file__), 'reports')
         if not os.path.exists(report_dir):
             os.mkdir(report_dir)
         current_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -161,6 +168,8 @@ class Crawler:
                     screenshot_after_click = self.driver.save_screenshot_as_jpg(self.__screenshot_dir)
 
                     # log.error("click a element! Path: {}".format(xpath))
+
+                    # recode click event info.
                     self.__statistics(xpath, node_uid.uid, screenshot_before_click, screenshot_after_click)
 
                     if not self.__is_white_element(node_uid.uid):
@@ -221,11 +230,11 @@ class Crawler:
         return False
 
     def __statistics(self, xpath, node_uid,
-                     screenshot_base64_before_click, screenshot_base64_after_click):
+                     screenshot_before_click, screenshot_after_click):
         activity = node_uid.split(':')[0]
         event = self.event_record(time=int(time.time()),
-                                  before_click=screenshot_base64_before_click,
-                                  after_click=screenshot_base64_after_click,
+                                  before_click=screenshot_before_click,
+                                  after_click=screenshot_after_click,
                                   activity=activity,
                                   xpath=xpath,
                                   status='pass')
@@ -238,9 +247,15 @@ class Crawler:
     def quit(self):
         self.driver.quit()
 
+
     @property
     def record(self):
+        self.android_log.collect_log(self.report_path)
         return self.__record
+
+    @property
+    def report_path(self):
+        return self.__report_path
 
 
 

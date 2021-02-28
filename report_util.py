@@ -2,11 +2,12 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
+import json
 import os
 import re
 import subprocess
-import time
-from collections import namedtuple
+import shutil
+from collections import namedtuple, defaultdict
 from datetime import datetime
 
 from jinja2 import Environment, PackageLoader
@@ -14,44 +15,70 @@ from jinja2 import Environment, PackageLoader
 
 class Report:
 
-    def __init__(self, report_name):
+    def __init__(self, report_dir):
+        self.report_dir = report_dir
         self.env = Environment(loader=PackageLoader('report_util', 'templates'))
         self.template = self.env.get_template('report_template.html')
-        self.report_dir = os.path.join(os.path.dirname(__file__), 'reports')
-        if not os.path.exists(self.report_dir):
-            os.mkdir(self.report_dir)
-        self.report_name = os.path.join(self.report_dir, report_name + '.html')
+        self.report_name = os.path.join(self.report_dir, 'app_crawler_report.html')
+
+    def load_data(self):
+        with open(os.path.join(self.report_dir, 'log.json'), 'r', encoding='utf8') as fp:
+            data = json.load(fp)
+
+        data_detail = {'pass': 0, 'error': 0, 'pass_detail': [], 'error_detail': []}
+        data_dict = defaultdict(lambda: data_detail)
+        for item in data:
+            content = data_dict[item[3]]
+            detail = dict()
+            detail['before_click'] = os.path.join(self.report_dir, 'screenshot', item[1])
+            detail['after_click'] = os.path.join(self.report_dir, 'screenshot', item[2])
+            detail['xpath'] = item[4]
+            detail['log'] = item[-1]
+            if item[-1] == 'pass':
+                content['pass'] += 1
+                content['pass_detail'].append(detail)
+
+            else:
+                content['error'] += 1
+                content['error_detail'].append(detail)
+        print(data_dict)
+        return data_dict
 
     def generate_report(self):
-        report_content = self.template.render(name='james')
+        params = self.load_data()
+        # copy css and js from templates to report dir.
+        css_dir = os.path.join(self.report_dir, 'css')
+        js_dir = os.path.join(self.report_dir, 'js')
+        os.mkdir(css_dir)
+        os.mkdir(js_dir)
+        src_css = os.path.join(os.path.dirname(__file__), 'templates', 'css', 'bootstrap.css')
+        src_js = os.path.join(os.path.dirname(__file__), 'templates', 'js', 'jquery-3.5.1.js')
+        shutil.copy(src_css, css_dir)
+        shutil.copy(src_js, js_dir)
+        report_content = self.template.render(activities=params)
         with open(self.report_name, 'w', encoding='utf-8') as f:
             f.write(report_content)
-
-
-
 
 
 class LogAndroid:
 
     def __init__(self, udid):
-        self.log_clear = 'adb -s {} logcat -c'.format(udid)
-        self.crash_log = 'adb -s {} logcat -b crash'.format(udid)
-        self.report_path = os.path.join(os.path.dirname(__file__), 'report')
-        if not os.path.exists(self.report_path):
-            os.mkdir(self.report_path)
-        self.__log_path = os.path.join(self.report_path, str(int(time.time())) + '_{}_log.txt'.format(udid))
+        self.__udid = udid
+        self.__log_clear = 'adb -s {} logcat -c'.format(self.__udid)
+        self.__crash_log = 'adb -s {} logcat -b crash'.format(self.__udid)
 
     def clear_log(self):
         while True:
-            p = subprocess.Popen(self.log_clear, shell=True, encoding='utf8',
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(self.__log_clear, shell=True, encoding='utf8',
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if not p.stdout.read():
                 break
 
-    def collect_log(self):
-        with open(self.log_path, 'w', encoding='utf8') as f:
-            p = subprocess.Popen(self.crash_log, shell=True, encoding='utf8',
-                             stdout=f, stderr=subprocess.PIPE)
+    def collect_log(self, report_path):
+        log_path = os.path.join(report_path, 'log.txt')
+        with open(log_path, 'w', encoding='utf8') as f:
+            p = subprocess.Popen(self.__crash_log, shell=True, encoding='utf8',
+                                 stdout=f, stderr=subprocess.PIPE)
             try:
                 p.wait(timeout=4)
             except subprocess.TimeoutExpired:
@@ -59,20 +86,13 @@ class LogAndroid:
             finally:
                 p.terminate()
 
-    def __str__(self):
-        return self.log_path
-
-    @property
-    def log_path(self):
-        return self.__log_path
-
 
 class GenerateJson:
 
     crash = namedtuple('crash', ['time', 'log'])
 
-    def __init__(self, log_path, record):
-        self.log_path = log_path
+    def __init__(self, report_path, record):
+        self.report_path = report_path
         self.record = record
         self.__crash_log = []
 
@@ -82,7 +102,8 @@ class GenerateJson:
 
     def extract_crash_log(self):
         search_crash = re.compile(r'.*FATAL EXCEPTION.*')
-        with open(self.log_path, 'r') as f:
+        log_path = os.path.join(self.report_path, 'log.txt')
+        with open(log_path, 'r') as f:
             log_detail = ''
             for line in f.readlines():
                 if search_crash.search(line):
@@ -98,9 +119,11 @@ class GenerateJson:
                 else:
                     log_detail += line
             else:
-                self.__crash_log.append(self.crash(timestamp, log_detail))
+                if log_detail:
+                    self.__crash_log.append(self.crash(timestamp, log_detail))
 
     def insert_crash_log(self):
+        self.extract_crash_log()
         if self.__crash_log:
             for log in self.__crash_log:
                 timestamp = int(log.time)
@@ -108,6 +131,11 @@ class GenerateJson:
                 event = self.record[position]
                 event = event._replace(status=str(timestamp) + '\n' + log.log)
                 self.record[position] = event
+
+    def generate_json(self):
+        json_path = os.path.join(self.report_path, 'log.json')
+        with open(json_path, 'w', encoding='utf-8') as fp:
+            json.dump(self.record, fp)
 
     def __search(self, timestamp: int):
         n = len(self.record)

@@ -12,6 +12,7 @@ from device_info_util import get_serial_numbers_android, get_serial_numbers_ios,
 from crawler import Crawler
 from config_util import Config
 from log import log
+from report_util import GenerateJson, Report
 
 
 def print_spider():
@@ -62,15 +63,18 @@ def performer(config_path, serial):
         while True:
             spider.run()
     except InvalidSessionIdException:
+        # return test result.
+        return spider.report_path, spider.record
         log.error('test end!')
 
 
 if __name__ == '__main__':
     print_spider()
     config_path = 'config/NBA_Android_config.yml'
-    timer = 2
+    timer = 1
     max_workers = 5
     collector = list()
+    futures_map = dict()
 
     config = Config(config_path)
     devices_list = list()
@@ -86,9 +90,24 @@ if __name__ == '__main__':
         log.warning("Not find any device.")
     else:
         with futures.ThreadPoolExecutor(max_workers) as executor:
-            futures_list = [executor.submit(performer, config_path, serial) for serial in devices_list]
+            futures_list = []
+            for serial in devices_list:
+                future = executor.submit(performer, config_path, serial)
+                futures_map[future] = serial
+                futures_list.append(future)
+
             for future in futures.as_completed(futures_list):
-                print(future.result())
+                print(futures_map.get(future))
+                report_dir, record = future.result()
+                json_gene = GenerateJson(report_dir,record)
+                json_gene.insert_crash_log()
+                json_gene.generate_json()
+
+                # generate report
+                report = Report(report_dir=report_dir)
+                report.generate_report()
+
+
 
         kill_adb_server()
         log.warning("All test end.")

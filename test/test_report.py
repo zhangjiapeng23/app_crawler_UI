@@ -9,7 +9,7 @@ class TestReport:
 
     def setup(self):
         print("test start.")
-        self.report = Report(report_name='james_test')
+        self.report = Report(report_name='james_test_2')
 
     def teardown(self):
         print("test end.")

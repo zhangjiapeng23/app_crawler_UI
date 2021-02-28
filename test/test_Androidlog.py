@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
+import os
 import time
 
 from report_util import LogAndroid
@@ -20,7 +21,8 @@ class TestAndroidLog:
 
     def test_save_log(self):
         time.sleep(10)
-        self.log.collect_log()
+        report_path = os.path.join(os.path.dirname(__file__), 'test/testdata/log')
+        self.log.collect_log(report_path)
 
 
 
