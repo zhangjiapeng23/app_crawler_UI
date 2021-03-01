@@ -8,15 +8,45 @@
     <style>
         pre {
             overflow: auto;
-            height: 600px;
+            height: 400px;
             word-wrap: break-word;
             white-space: pre-wrap;
+        }
+        .pass-log {
+            color: lawngreen;
+            font-style: italic;
+        }
+        .crash-log {
+            color: red;
+            font-style: italic;
+        }
+        .serial {
+            width: 3%;
+        }
+        .activity {
+            width: 17%;
+        }
+        .pass-total {
+            width: 5%;
+        }
+        .error-total {
+            width: 5%;
+        }
+        .pass-detail {
+            width: 35%;
+        }
+        .error-detail {
+            width: 35%;
+        }
+        th {
+            word-wrap: break-word;
+            word-break: break-word;
         }
     </style>
 </head>
 <body>
 <div class="page-header text-center">
-    <h1>Test report</h1>
+    <h1>Test Report</h1>
 </div>
 
 <div class="container">
@@ -25,12 +55,12 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Activity</th>
-                        <th>Event Total</th>
-                        <th>Error total</th>
-                        <th>Pass</th>
-                        <th>Error</th>
+                        <th class="serial">#</th>
+                        <th class="activity">Activity</th>
+                        <th class="pass-total">Pass Total</th>
+                        <th class="error-total">Error Total</th>
+                        <th class="pass-detail">Pass Detail</th>
+                        <th class="error-detail">Error Detail</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,17 +71,18 @@
                         <th>{{ value.pass }}</th>
                         <th>{{ value.error }}</th>
                         <th>
-                            <pre>{% for item in value.pass_detail %}
-                                {{ loop.index }}.&nbsp;{{ item.xpath }}&nbsp;{{ item.log}}&nbsp;<a href="#">Screenshot</a><span style="display: none"><br>before click:&nbsp;<br><img src={{ item.before_click }} width="40%" height="60%"><br>after click:&nbsp;<br><img src={{ item.after_click }} width="40%" height="60%"></span>
-                                {% endfor %}}
-                            </pre>
-
+                            {% if value.pass_detail %}
+                            <pre>{% for item in value.pass_detail %}{{ loop.index }}.&nbsp;{{ item.xpath }}&nbsp;<span class="pass-log">{{ item.log}}</span>&nbsp;<a href="javascript:;">Screenshot</a><span style="display: none"><br>before click:&nbsp;<br><img src={{ item.before_click }} width="60%" height="90%"><br>after click:&nbsp;<br><img src={{ item.after_click }} width="60%" height="90%"></span><br>{% endfor %}</pre>
+                            {% else %}
+                                No content
+                            {% endif %}
                         </th>
                         <th>
-                            <pre>{% for item in value.error_detail %}
-                                {{ loop.index }}.&nbsp;{{ item.xpath }}&nbsp;{{ item.log}}&nbsp;<a href="#">Screenshot</a><span style="display: none"><br>before click:&nbsp;<br><img src={{ item.before_click }} width="40%" height="60%"><br>after click:&nbsp;<br><img src={{ item.after_click }} width="40%" height="60%"></span>
-                                {% endfor %}
-                            </pre>
+                            {% if value.error_detail %}
+                            <pre>{% for item in value.error_detail %}{{ loop.index }}.&nbsp;{{ item.xpath }}&nbsp;<span class="crash-log">{{ item.log}}</span>&nbsp;<a href="javascript:;">Screenshot</a><span style="display: none"><br>before click:&nbsp;<br><img src={{ item.before_click }} width="60%" height="90%"><br>after click:&nbsp;<br><img src={{ item.after_click }} width="60%" height="90%"></span>{% endfor %}<br></pre>
+                            {% else %}
+                                No content
+                            {% endif %}
                         </th>
                     </tr>
                     {% endfor %}
