@@ -155,7 +155,6 @@ class Crawler:
             elements = self.driver.find_elements(xpath)
             if len(elements) > 0:
                 # record before click screenshot
-                # screenshot_before_click = self.driver.save_screenshot_as_base64(position=node_uid.bounds)
                 screenshot_before_click = self.driver.save_screenshot_as_jpg(self.__screenshot_dir, node_uid.bounds)
 
                 try:
@@ -164,7 +163,6 @@ class Crawler:
                     log.error("element click error! {}".format(err))
                 else:
                     # record after click screenshot
-                    # screenshot_after_click = self.driver.save_screenshot_as_base64()
                     screenshot_after_click = self.driver.save_screenshot_as_jpg(self.__screenshot_dir)
 
                     # log.error("click a element! Path: {}".format(xpath))

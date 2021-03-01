@@ -25,23 +25,32 @@ class Report:
         with open(os.path.join(self.report_dir, 'log.json'), 'r', encoding='utf8') as fp:
             data = json.load(fp)
 
-        data_detail = {'pass': 0, 'error': 0, 'pass_detail': [], 'error_detail': []}
-        data_dict = defaultdict(lambda: data_detail)
+        data_detail = {'pass': 0, 'error': 0, 'pass_detail': None, 'error_detail': None}
+        data_dict = defaultdict(lambda: dict(data_detail))
         for item in data:
+            # get activity name {item[3]}
             content = data_dict[item[3]]
+            # create detail dict.
             detail = dict()
-            detail['before_click'] = os.path.join(self.report_dir, 'screenshot', item[1])
-            detail['after_click'] = os.path.join(self.report_dir, 'screenshot', item[2])
+            detail['before_click'] = os.path.join('screenshot', item[1])
+            detail['after_click'] = os.path.join('screenshot', item[2])
             detail['xpath'] = item[4]
             detail['log'] = item[-1]
             if item[-1] == 'pass':
                 content['pass'] += 1
-                content['pass_detail'].append(detail)
-
+                # check pass_detail value is None.
+                if content['pass_detail']:
+                    content['pass_detail'].append(detail)
+                else:
+                    content['pass_detail'] = [detail]
             else:
                 content['error'] += 1
-                content['error_detail'].append(detail)
-        print(data_dict)
+                if content['error_detail']:
+                    content['error_detail'].append(detail)
+                else:
+                    content['error_detail'] = [detail]
+        for i in data_dict.values():
+            print(i['pass_detail'])
         return data_dict
 
     def generate_report(self):
@@ -105,10 +114,12 @@ class GenerateJson:
         log_path = os.path.join(self.report_path, 'log.txt')
         with open(log_path, 'r') as f:
             log_detail = ''
+            timestamp = None
             for line in f.readlines():
                 if search_crash.search(line):
                     if log_detail:
-                        self.__crash_log.append(self.crash(timestamp, log_detail))
+                        if timestamp:
+                            self.__crash_log.append(self.crash(timestamp, log_detail))
                         log_detail = ''
                     crash_time = line.split()[:2]
                     data = ' '.join(i for i in crash_time)
