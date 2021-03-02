@@ -49,8 +49,6 @@ class Report:
                     content['error_detail'].append(detail)
                 else:
                     content['error_detail'] = [detail]
-        for i in data_dict.values():
-            print(i['pass_detail'])
         return data_dict
 
     def generate_report(self):
@@ -60,10 +58,12 @@ class Report:
         js_dir = os.path.join(self.report_dir, 'js')
         os.mkdir(css_dir)
         os.mkdir(js_dir)
-        src_css = os.path.join(os.path.dirname(__file__), 'templates', 'css', 'bootstrap.css')
-        src_js = os.path.join(os.path.dirname(__file__), 'templates', 'js', 'jquery-3.5.1.js')
-        shutil.copy(src_css, css_dir)
-        shutil.copy(src_js, js_dir)
+        src_css_dir = os.path.join(os.path.dirname(__file__), 'templates', 'css')
+        src_js_dir = os.path.join(os.path.dirname(__file__), 'templates', 'js')
+        for src_css_file in os.listdir(src_css_dir):
+            shutil.copy(os.path.join(src_css_dir, src_css_file), css_dir)
+        for src_js_file in os.listdir(src_js_dir):
+            shutil.copy(os.path.join(src_js_dir, src_js_file), js_dir)
         report_content = self.template.render(activities=params)
         with open(self.report_name, 'w', encoding='utf-8') as f:
             f.write(report_content)
