@@ -1,0 +1,49 @@
+pre {
+    overflow: auto;
+    height: 400px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.pass-log {
+    color: lawngreen;
+    font-style: italic;
+}
+
+.crash-log {
+    color: red;
+    font-style: italic;
+}
+
+.serial {
+    width: 3%;
+}
+
+.activity {
+    width: 17%;
+}
+
+.pass-total {
+    width: 5%;
+}
+
+.error-total {
+    width: 5%;
+}
+
+.pass-detail {
+    width: 35%;
+}
+
+.error-detail {
+    width: 35%;
+}
+
+th {
+    word-wrap: break-word;
+    word-break: break-word;
+}
+td {
+    word-wrap: break-word;
+    word-break: break-word;
+}
