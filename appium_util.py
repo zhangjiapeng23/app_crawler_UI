@@ -215,8 +215,10 @@ class Appium:
         else:
             screenshot_file += '.jpg'
         screenshot_base64 = self.save_screenshot_as_base64(position)
-        with open(os.path.join(screenshot_dir, screenshot_file), 'wb') as f:
-            f.write(base64.b64decode(screenshot_base64))
+        # deal when screenshot get failed will lead error
+        if screenshot_base64:
+            with open(os.path.join(screenshot_dir, screenshot_file), 'wb') as f:
+                f.write(base64.b64decode(screenshot_base64))
         return screenshot_file
 
 
