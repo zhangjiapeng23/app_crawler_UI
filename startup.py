@@ -2,7 +2,9 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
-
+import os
+import re
+import sys
 import threading
 from concurrent import futures
 
@@ -13,6 +15,11 @@ from crawler import Crawler
 from config_util import Config
 from log import log
 from report_util import GenerateJson, Report
+
+class FilePathInvalid(Exception):
+    '''
+    file path is not valid or can't find this fiel
+    '''
 
 
 def print_spider():
@@ -55,7 +62,7 @@ def execute_timer(total_time, func):
     timer.start()
 
 
-def performer(config_path, serial):
+def performer(config_path, serial, timer):
     config = Config(config_path, udid=serial)
     spider = Crawler(config, timer)
     execute_timer(spider.timer, spider.quit)
@@ -67,48 +74,92 @@ def performer(config_path, serial):
         return spider.report_path, spider.record
         log.error('test end!')
 
+def cmd_parse():
+    necessary_param = dict()
+    cmd = sys.argv[1:]
+    cmd_string = ''.join(cmd)
+    config_path = re.search(r'-[c|C]([^-]*)', cmd_string)
+    if config_path and config_path.group(1):
+        config_file = config_path.group(1)
+        if os.path.exists(config_file):
+            necessary_param['config'] = config_file
+        elif os.path.exists(os.path.join(os.getcwd(), config_file)):
+            necessary_param['config'] = os.path.join(os.getcwd(), config_file)
+        elif os.path.exists(os.path.join(os.path.dirname(__file__), 'config', config_file)):
+            necessary_param['config'] = os.path.join(os.path.dirname(__file__), 'config', config_file)
+        else:
+            error_msg = "{} is not a valid file path, please double check.".format(config_file)
+            raise FilePathInvalid(error_msg)
+    else:
+        error_msg = "you must configure the path of config file by using '-c' param."
+        raise FilePathInvalid(error_msg)
+
+    # other param
+    optional_param = dict()
+    max_worker_nums = re.search(r'-[m|M]([^-]*)', cmd_string)
+    run_time = re.search(r'-[t|T]([^-])*', cmd_string)
+    if max_worker_nums and max_worker_nums.group(1):
+        optional_param['max_workers'] = max_worker_nums.group(1)
+    if run_time and run_time.group(1):
+        optional_param['timer'] = run_time.group(1)
+
+    # merger params
+    necessary_param.update(optional_param)
+    return necessary_param
+
+def main():
+    print_spider()
+    try:
+        params_dict = cmd_parse()
+    except FilePathInvalid as msg:
+        log.error(msg)
+    else:
+        config_path = params_dict.get('config')
+        # default 2 minutes.
+        timer = int(params_dict.get('timer', 2))
+        # default 5 threads.
+        max_workers = int(params_dict.get('max_workers', 5))
+
+        collector = list()
+        futures_map = dict()
+        config = Config(config_path)
+        devices_list = list()
+        platform = config.platformName
+        if platform == 'Android':
+            devices_list = get_serial_numbers_android()
+        elif platform == 'iOS':
+            devices_list = get_serial_numbers_ios()
+        else:
+            log.error("Not support {} platform".format(platform))
+
+        if not devices_list:
+            log.warning("Not find any device.")
+        else:
+            with futures.ThreadPoolExecutor(max_workers) as executor:
+                futures_list = []
+                for serial in devices_list:
+                    future = executor.submit(performer, config_path, serial, timer)
+                    futures_map[future] = serial
+                    futures_list.append(future)
+
+                for future in futures.as_completed(futures_list):
+                    print(futures_map.get(future))
+                    report_dir, record = future.result()
+                    json_gene = GenerateJson(report_dir, record)
+                    json_gene.insert_crash_log()
+                    json_gene.generate_json()
+
+                    # generate report
+                    report = Report(report_dir=report_dir)
+                    report.clear_expired_report(expired_day=3)
+                    report.generate_report()
+
+            kill_adb_server()
+            log.warning("All test end.")
+
 
 if __name__ == '__main__':
-    print_spider()
-    config_path = 'config/NBA_Android_config.yml'
-    timer = 1
-    max_workers = 5
-    collector = list()
-    futures_map = dict()
-
-    config = Config(config_path)
-    devices_list = list()
-    platform = config.platformName
-    if platform == 'Android':
-        devices_list = get_serial_numbers_android()
-    elif platform == 'iOS':
-        devices_list = get_serial_numbers_ios()
-    else:
-        log.error("Not support {} platform".format(platform))
-
-    if not devices_list:
-        log.warning("Not find any device.")
-    else:
-        with futures.ThreadPoolExecutor(max_workers) as executor:
-            futures_list = []
-            for serial in devices_list:
-                future = executor.submit(performer, config_path, serial)
-                futures_map[future] = serial
-                futures_list.append(future)
-
-            for future in futures.as_completed(futures_list):
-                print(futures_map.get(future))
-                report_dir, record = future.result()
-                json_gene = GenerateJson(report_dir,record)
-                json_gene.insert_crash_log()
-                json_gene.generate_json()
-
-                # generate report
-                report = Report(report_dir=report_dir)
-                report.generate_report()
+    main()
 
 
-
-        kill_adb_server()
-        log.warning("All test end.")
 
