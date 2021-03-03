@@ -8,7 +8,7 @@ import re
 import subprocess
 import shutil
 from collections import namedtuple, defaultdict
-from datetime import datetime
+import datetime
 
 from jinja2 import Environment, PackageLoader
 
@@ -68,6 +68,25 @@ class Report:
         with open(self.report_name, 'w', encoding='utf-8') as f:
             f.write(report_content)
 
+    def clear_expired_report(self, expired_day):
+        root_reports = os.path.join(self.report_dir, '..')
+        days = datetime.timedelta(days=expired_day)
+        expired_date = datetime.datetime.now() - days
+        expired_date = int(expired_date.strftime('%Y%m%d%H%M%S'))
+        for report in os.listdir(root_reports):
+            report_date = int(report.split('_')[0])
+            if report_date < expired_date:
+                self.rec_remove_file(os.path.join(root_reports, report))
+            else:
+                break
+
+    @staticmethod
+    def rec_remove_file(dir):
+        res = os.walk(dir)
+        for _dir, _, files in reversed(list(res)):
+            for file in files:
+                os.remove(os.path.join(_dir, file))
+            os.rmdir(_dir)
 
 class LogAndroid:
 
@@ -123,8 +142,8 @@ class GenerateJson:
                         log_detail = ''
                     crash_time = line.split()[:2]
                     data = ' '.join(i for i in crash_time)
-                    crash_time = str(datetime.now().year) + ' ' + data
-                    time_array = datetime.strptime(crash_time, '%Y %m-%d %H:%M:%S.%f')
+                    crash_time = str(datetime.datetime.now().year) + ' ' + data
+                    time_array = datetime.datetime.strptime(crash_time, '%Y %m-%d %H:%M:%S.%f')
                     timestamp = int(time_array.timestamp())
                     log_detail += line
                 else:
@@ -171,9 +190,9 @@ class GenerateJson:
 
 
 
-
-
-
+if __name__ == '__main__':
+    path = os.path.join(os.path.dirname(__file__), 'reports', '20210302150845_G000N60784240G4M')
+    Report.rec_remove_file(path)
 
 
 
