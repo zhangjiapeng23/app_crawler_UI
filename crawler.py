@@ -23,7 +23,7 @@ from report_util import LogAndroid
 class Crawler:
     event_record = namedtuple('event', ['time', 'before_click', 'after_click', 'activity', 'xpath', 'status'])
 
-    def __init__(self, config: Config, timer=1):
+    def __init__(self, config: Config, timer):
         max_page_depth = config.config.get('max_depth')
         crash_traceback = config.config.get('max_screen')
         self.__crash_traceback = deque(maxlen=crash_traceback) if crash_traceback else deque(maxlen=10)
@@ -36,6 +36,7 @@ class Crawler:
         self.white_elements = self.__config.white_elements()
         self.base_activities = self.__config.base_activities()
         self.last_elements = self.__config.last_elements()
+        self.selected_elements = self.__config.selected_elements()
         self.driver = Appium(desired_caps=config.appium_desired_caps())
         self.__current_page = None
         self.__record = list()
@@ -115,23 +116,35 @@ class Crawler:
             self.__xpath_generator = xpath_generator
 
         for xpath, node_uid in self.__xpath_generator:
+            # check the node whether has been clicked
             if node_uid.uid in self.seen:
-                log.info('element {} is seen, skip it.'.format(node_uid))
+                log.info('element {} is seen, skip it.'.format(node_uid.uid))
                 continue
-            elif self.__is_black_element(xpath):
+
+            # check the node whether is in selected list.
+            if not self.__is_selected_element(node_uid.uid):
+                # log.warning("Current element not in selected list, not click.\n{}".format(node_uid.uid))
+                self.seen.add(node_uid.uid)
+                continue
+
+            # check the node whether is in black list.
+            if self.__is_black_element(node_uid.uid):
                 log.warning("Current element in black list, not click.")
                 self.seen.add(node_uid.uid)
                 continue
-            elif self.__is_last_element(xpath):
-                log.warning("Current element in last list, check later.")
+
+            # check the node whether is in last click list.
+            if self.__is_last_element(node_uid.uid):
+                # log.warning("Current element in last list, check later.")
                 self.__xpath_generator.last.append((xpath, node_uid))
                 continue
-            else:
-                res = self.__click(xpath, node_uid)
-                if res:
-                    return res
+
+            res = self.__click(xpath, node_uid)
+            if res:
+                return res
 
         else:
+            # click last click node.
             for xpath, node_uid in self.__xpath_generator.last:
                 res = self.__click(xpath, node_uid)
                 if res:
@@ -173,15 +186,15 @@ class Crawler:
                     if not self.__is_white_element(node_uid.uid):
                         self.seen.add(node_uid.uid)
 
-                        # add random actions
-                        self.driver.monkey_actions()
+                    # add random actions
+                    self.driver.monkey_actions()
 
-                        self.__after_click()
+                    self.__after_click()
 
-                        # judge page is change
-                        current_page = self.get_page_info()
-                        if current_page != self.__xpath_generator:
-                            return current_page, self.__xpath_generator
+                    # judge page is change
+                    current_page = self.get_page_info()
+                    if current_page != self.__xpath_generator:
+                        return current_page, self.__xpath_generator
 
     def __after_click(self):
         # check is in black activity
@@ -220,6 +233,9 @@ class Crawler:
     def __is_black_activity(self, activity):
         return self.__re_search(activity, self.black_activities)
 
+    def __is_selected_element(self, node_uid):
+        return self.__re_search(node_uid, self.selected_elements)
+
     @staticmethod
     def __re_search(target, _list):
         for item in _list:
@@ -244,7 +260,6 @@ class Crawler:
 
     def quit(self):
         self.driver.quit()
-
 
     @property
     def record(self):
