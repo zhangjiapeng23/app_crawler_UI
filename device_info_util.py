@@ -1,6 +1,8 @@
 import re
 import subprocess
 
+from log import log
+
 timeout = 8
 
 
@@ -40,8 +42,9 @@ def get_serial_numbers_android():
     serials = []
     cmd = 'adb devices'
     for i in execute_cmd(cmd):
-        if 'List of devices' in i or 'daemon' in i or 'offline' \
-                in i or 'unauthorized' in i or len(i) < 5:
+        log.error(i)
+        if any(('List of devices' in i,'daemon' in i, 'offline' in i,
+               'unauthorized' in i, len(i) < 5, 'killing' in i)):
             pass
         else:
             udid = re.findall('(.*)\tdevice', i)
@@ -100,6 +103,9 @@ def get_device_system_version_android(serial_number):
     cmd = 'adb -s {} shell getprop ro.build.version.release'.format(serial_number)
     for i in execute_cmd(cmd):
         system_version = re.findall('(.*)\n', i)
+    if not system_version:
+        # when error return default value.
+        return 9.0
     return system_version[0]
 
 
