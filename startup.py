@@ -65,7 +65,7 @@ def execute_timer(total_time, func):
 def performer(config_path, serial, timer):
     config = Config(config_path, udid=serial)
     spider = Crawler(config, timer)
-    execute_timer(spider.timer, spider.quit)
+    execute_timer(timer, spider.quit)
     try:
         while True:
             spider.run()
@@ -97,7 +97,7 @@ def cmd_parse():
     # other param
     optional_param = dict()
     max_worker_nums = re.search(r'-[m|M]([^-]*)', cmd_string)
-    run_time = re.search(r'-[t|T]([^-])*', cmd_string)
+    run_time = re.search(r'-[t|T]([^-]*)', cmd_string)
     if max_worker_nums and max_worker_nums.group(1):
         optional_param['max_workers'] = max_worker_nums.group(1)
     if run_time and run_time.group(1):
@@ -120,7 +120,6 @@ def main():
         # default 5 threads.
         max_workers = int(params_dict.get('max_workers', 5))
 
-        collector = list()
         futures_map = dict()
         config = Config(config_path)
         devices_list = list()
