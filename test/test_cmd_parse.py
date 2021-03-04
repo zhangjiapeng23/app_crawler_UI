@@ -18,7 +18,8 @@ class CmdPars:
         print('test end.')
 
     def test_cmd_parse(self):
-        cmd_parse()
-
+        res =cmd_parse()
+        print(res)
 if __name__ == '__main__':
-    cmd_parse()
+    res = cmd_parse()
+    print(res)

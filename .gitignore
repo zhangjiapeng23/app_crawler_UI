@@ -5,3 +5,4 @@ __pycache__
 config/NBA*
 *screenshot/
 reports/
+test/testdata/pageSource/
