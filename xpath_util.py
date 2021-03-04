@@ -120,7 +120,7 @@ class ElementUid:
             value = self.node_attrib.get(attrib)
             if value not in invalid_list:
                 self.__uid += value
-            self.__uid = activity + ':' + self.__uid
+        self.__uid = activity + ':' + self.__uid
 
         position_str = self.node_attrib.get('bounds')
         if position_str:
@@ -131,6 +131,8 @@ class ElementUid:
 
     @property
     def uid(self):
+        # format is “activity:classxxxxtest010....”
+        # include current activity and node each attributes info.
         return self.__uid
 
     @property
