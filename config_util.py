@@ -86,25 +86,32 @@ class Config:
         return desired_caps
 
     def white_apps(self) -> set:
-        white_apps = self.config.get("whiteApps", list)
+        white_apps = self.config.get("whiteApps", list())
         return set(white_apps)
 
     def last_elements(self) -> set:
-        last_elements = self.config.get("lastElements", list)
+        last_elements = self.config.get("lastElements", list())
         return set(last_elements)
 
     def black_elements(self) -> set:
-        black_elements = self.config.get("blackElements", list)
+        black_elements = self.config.get("blackElements", list())
         return set(black_elements)
 
     def white_elements(self) -> set:
-        white_elements = self.config.get("whiteElements", list)
+        white_elements = self.config.get("whiteElements", list())
         return set(white_elements)
 
     def black_activities(self) -> set:
-        black_activities = self.config.get("blackActivities", list)
+        black_activities = self.config.get("blackActivities", list())
         return set(black_activities)
 
     def base_activities(self) -> set:
-        base_activities = self.config.get("baseActivities", list)
+        base_activities = self.config.get("baseActivities", list())
         return set(base_activities)
+
+    def selected_elements(self) -> set:
+        selected_elements = self.config.get("selectedElements", list())
+        if not selected_elements:
+            # set default
+            selected_elements = ['.*Text.*', '.*Image.*', '.*Button.*', '.*CheckBox.*']
+        return selected_elements
