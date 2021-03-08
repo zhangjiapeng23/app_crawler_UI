@@ -34,7 +34,7 @@ class Report:
             detail = dict()
             detail['before_click'] = os.path.join('screenshot', item[1])
             detail['after_click'] = os.path.join('screenshot', item[2])
-            detail['xpath'] = item[4]
+            detail['xpath'] = '//' + item[4].split('//')[-1]
             detail['log'] = item[-1]
             if item[-1] == 'pass':
                 content['pass'] += 1

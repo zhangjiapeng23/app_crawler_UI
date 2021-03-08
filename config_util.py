@@ -62,6 +62,7 @@ class Config:
         desired_caps['skipDeviceInitialization'] = 'true'
         desired_caps['unicodeKeyBoard'] = 'true'
         desired_caps['resetKeyBoard'] = 'true'
+        desired_caps['settings[waitForIdleTimeout]'] = 1
 
         if desired_caps['platformName'] == 'Android':
             desired_caps['deviceName'] = device_info_util.get_device_name_android(self.__udid)
