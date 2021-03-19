@@ -7,69 +7,59 @@ import uuid
 from collections import deque
 
 
-class XpathParse:
-    # todo: XpathParse should change to iterable, not iterator. add XpathParseIterator
-    # todo: let XpathParse __iter__ return a XpathParseIterator.
+class XpathParseIteration:
 
-    def __init__(self, page, seen):
-        self.__routing = {}
-        self.__direct_routing = {}
-        self.__stack = deque()
-        self.__page = page
-        self.__root = self.__page()
-        # each node will be key of routing map, add attr uuid to keep unique.
-        self.__root.set('uuid', str(uuid.uuid1()))
-        self.__stack.append(self.__root)
-        # root parent node is None
-        self.__routing[self.__root] = None
-        self.seen = seen
+    def __init__(self, page):
+        # record last click elements.
         self.last = []
-
-    def __eq__(self, other):
-        return self.__page == other
+        self.page = page
+        # page_root: curent page xml root node.
+        self.root = page.current_page_root
+        # record each node parent: {cur_node: par_node}
+        self.__routing = {}
+        # record each node xpath string. {node: 'xxxx'}
+        self.__xpath_mapping = {}
+        # each node will be key of routing map, add attr uuid to keep unique.
+        self.root.set('uuid', str(uuid.uuid1()))
+        # root not have parent node
+        self.__routing[self.root] = None
+        # create a post order list
+        self.__postorder = deque()
+        stack = deque()
+        stack.append(self.root)
+        while stack:
+            node = stack.pop()
+            self.__postorder.append(node)
+            for child in node:
+                child.set('uuid', str(uuid.uuid1()))
+                self.__routing[child] = node
+                stack.append(child)
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        err = None
         try:
-            node = self.__stack.pop()
-        except IndexError as e:
-            err = e
-        finally:
-            if err:
-                raise StopIteration(err)
-            else:
-                for child in node:
-                    child.set('uuid', str(uuid.uuid1()))
-                    self.__stack.append(child)
-                    self.__routing[child] = node
-                return self.xpath(node)
+            node = self.__postorder.pop()
+        except IndexError as exc:
+            raise StopIteration(exc)
+        else:
+            return self.xpath(node)
 
     def xpath(self, node):
-        node_xpath = ''
-        # node_uid = self.generate_element_uid(node.attrib)
-        node_uid = ElementUid(node_attrib=node.attrib, activity=self.__page.current_activity)
-        if node_uid.uid not in self.seen:
-            v_node = node
-            while v_node is not None:
-                if v_node in self.__direct_routing.keys():
-                    node_xpath = self.__direct_routing[v_node] + node_xpath
-                    break
-
-                xpath = self.xpath_parsing(v_node)
-                if xpath is not None:
-                    node_xpath = '//' + xpath + node_xpath
-                else:
-                    break
-
-                v_node = self.__routing[v_node]
-            self.__direct_routing[node] = node_xpath
-            if node_xpath:
-                return node_xpath, node_uid
+        node_xpath_fmt = '//{}//{}'
+        node_uid = ElementUid(node_attrib=node.attrib, activity=self.page.current_activity)
+        v_node = node
+        k_node = self.__routing[v_node]
+        if v_node is not None and k_node is not None:
+            if k_node not in self.__xpath_mapping.keys():
+                k_xpath = self.xpath_parsing(k_node)
+                self.__xpath_mapping[k_node] = k_xpath
             else:
-                return next(self)
+                k_xpath = self.__xpath_mapping[k_node]
+            v_xpath = self.xpath_parsing(v_node)
+            node_xpath = node_xpath_fmt.format(k_xpath, v_xpath)
+            return node_xpath, node_uid
         else:
             return next(self)
 
@@ -103,6 +93,9 @@ class XpathParse:
         else:
             return "*"
 
+    def __eq__(self, other):
+        return self.page == other
+
 
 class ElementUid:
 
@@ -111,15 +104,18 @@ class ElementUid:
         self.__bounds = None
         self.__uid = ''
         invalid_list = {None, '', 'false'}
-        # 'index'
-        attrib_list = ['package', 'class', 'resource-id', 'content-desc',
-                       'text', 'checkable', 'checked', 'clickable', 'enabled', 'focusable',
-                       'long-clickable', 'password', 'scrollable', 'selected', 'displayed']
+        # 'index', 'package'
+        attrib_list = ['checkable', 'checked', 'clickable', 'enabled', 'focusable',
+                       'long-clickable', 'password', 'scrollable', 'selected', 'displayed',
+                       'class', 'text', 'content-desc', 'resource-id']
 
         for attrib in attrib_list:
             value = self.node_attrib.get(attrib)
             if value not in invalid_list:
-                self.__uid += value
+                if value == 'true':
+                    self.__uid += '1'
+                else:
+                    self.__uid += value
         self.__uid = activity + ':' + self.__uid
 
         position_str = self.node_attrib.get('bounds')

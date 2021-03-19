@@ -74,6 +74,7 @@ def performer(config_path, serial, timer):
         return spider.report_path, spider.record
         log.error('test end!')
 
+
 def cmd_parse():
     necessary_param = dict()
     cmd = sys.argv[1:]

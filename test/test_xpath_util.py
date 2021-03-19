@@ -4,7 +4,7 @@
 # @data  : 2021/2/10
 
 from page_parse import PageParse
-from xpath_util import XpathParse
+from xpath_util import XpathParseIteration
 
 
 class TestXpathUtil:
@@ -26,17 +26,17 @@ class TestXpathUtil:
         print('Test end.')
 
     def test_xpath_parse(self):
-        xpath = XpathParse(self.root, self.seen)
+        xpath = XpathParseIteration(self.root, self.seen)
         assert len(list(xpath)) > 0
 
     def test_xpath_parse_skip_seen(self):
-        xpath = XpathParse(self.root, self.seen)
+        xpath = XpathParseIteration(self.root, self.seen)
         # add all element to seen
         for i in xpath:
             if i[1] not in self.seen:
                 self.seen.add(i[1])
 
-        xpath2 = XpathParse(self.root, self.seen)
+        xpath2 = XpathParseIteration(self.root, self.seen)
         # pop last element
         self.seen.pop()
         count = 0

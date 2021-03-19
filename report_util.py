@@ -35,8 +35,8 @@ class Report:
             detail['before_click'] = os.path.join('screenshot', item[1])
             detail['after_click'] = os.path.join('screenshot', item[2])
             detail['xpath'] = '//' + item[4].split('//')[-1]
-            detail['log'] = item[-1]
-            if item[-1] == 'pass':
+            detail['log'] = item[5]
+            if item[5] == 'pass':
                 content['pass'] += 1
                 # check pass_detail value is None.
                 if content['pass_detail']:
@@ -149,7 +149,7 @@ class GenerateJson:
                 else:
                     log_detail += line
             else:
-                if log_detail:
+                if log_detail and timestamp:
                     self.__crash_log.append(self.crash(timestamp, log_detail))
 
     def insert_crash_log(self):

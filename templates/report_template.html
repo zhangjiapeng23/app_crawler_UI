@@ -38,7 +38,7 @@
                         <td>{{ value.error }}</td>
                         <td>
                             {% if value.pass_detail %}
-                            <pre>{% for item in value.pass_detail %}{{ loop.index }}.&nbsp;{{ item.xpath }}&nbsp;<span class="pass-log">{{ item.log}}</span>&nbsp;<a href="javascript:;">Screenshot</a><span style="display: none"><br><span id="{{ item.before_click }}">before click:</span><br><img class="before-screenshot" src="" width="60%" height="90%"><br><span id="{{ item.after_click }}">after click:</span><br><img class="after-screenshot" src="" width="60%" height="90%"></span><br>{% endfor %}</pre>
+                            <pre>{% for item in value.pass_detail %}{{ loop.index }}.&nbsp;{{ item.xpath }}&nbsp;<span class="pass-log">{{ item.log}}</span>&nbsp;<a href="javascript:;">Screenshot</a><span style="display: none"><br><span id="{{ item.before_click }}">before click:</span><br><img class="before-screenshot" src="" onload="resize(this,400,400);"><br><span id="{{ item.after_click }}">after click:</span><br><img class="after-screenshot" src="" onload="resize(this,400,400);"></span><br>{% endfor %}</pre>
                             {% else %}
                                 No content
                             {% endif %}
@@ -61,6 +61,16 @@
 
 <script>
     bindShowScreenshot();
+
+    function resize(element, maxWidth, maxHeight) {
+        if (element.width > maxWidth || element.height > maxHeight) {
+            if (element.width / element.height > maxWidth / maxHeight) {
+                element.width = maxWidth;
+            } else {
+                element.height = maxHeight;
+            }
+        }
+    }
 </script>
 </body>
 

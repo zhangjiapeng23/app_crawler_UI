@@ -7,7 +7,7 @@ from collections import deque
 
 from lxml import etree
 
-from xpath_util import XpathParse
+from xpath_util import XpathParseIteration
 
 class PageParse:
 
@@ -39,7 +39,7 @@ class PageParse:
                     stack.append(node1)
                     stack.append(node2)
             return True
-        elif isinstance(other, XpathParse):
+        elif isinstance(other, XpathParseIteration):
             return other == self
         else:
             return self == PageParse(other)
