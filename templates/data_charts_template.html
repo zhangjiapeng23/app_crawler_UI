@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Charts</title>
+    <style>
+        #pie {
+            height: 400px;
+        }
+        #histogram {
+            height: 400px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-header text-center">
+        <h3>Data Charts</h3>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div id="pie">
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div id="histogram">
+            </div>
+        </div>
+    </div>
+
+
+<script type="text/javascript">
+    var data = JSON.parse('{{ activity_chart }}')
+
+    var pie = echarts.init($('#pie')[0]);
+    var pieOption = {
+         series : [
+        {
+            name: 'Activity Pie',
+            type: 'pie',
+            radius: '55%',
+            data: data['pie']
+        }
+    ]
+    };
+    pie.setOption(pieOption);
+
+    var histogram = echarts.init($('#histogram')[0]);
+    var histogramOption = {
+        title: {
+                text: 'Activity Histogram'
+            },
+            tooltip: {},
+            legend: {
+                data:['Click Events']
+            },
+            xAxis: {
+                data: data['histogram']['xAxis']
+            },
+            yAxis: {},
+            series: [{
+                name: 'Click Events',
+                type: 'bar',
+                data: data['histogram']['count']
+            }]
+    };
+    histogram.setOption(histogramOption);
+
+
+
+
+</script>
+</body>
+</html>

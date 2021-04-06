@@ -47,3 +47,11 @@ td {
     word-wrap: break-word;
     word-break: break-word;
 }
+
+ .navbar-default .navbar-nav > .active > a:hover {
+     background-color: white;
+ }
+
+.navbar-default .navbar-nav > .active > a{
+    background-color: white;
+}
