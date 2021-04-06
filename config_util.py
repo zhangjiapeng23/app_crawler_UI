@@ -94,6 +94,10 @@ class Config:
         last_elements = self.config.get("lastElements", list())
         return set(last_elements)
 
+    def first_elements(self) -> set:
+        first_elements = self.config.get("firstElements", list())
+        return set(first_elements)
+
     def black_elements(self) -> set:
         black_elements = self.config.get("blackElements", list())
         return set(black_elements)

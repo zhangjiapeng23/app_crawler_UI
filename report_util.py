@@ -18,8 +18,12 @@ class Report:
     def __init__(self, report_dir):
         self.report_dir = report_dir
         self.env = Environment(loader=PackageLoader('report_util', 'templates'))
-        self.template = self.env.get_template('report_template.html')
-        self.report_name = os.path.join(self.report_dir, 'app_crawler_report.html')
+
+        self.basic_template = self.env.get_template('report_template.html')
+        self.data_charts_template = self.env.get_template('data_charts_template.html')
+
+        self.basic_report_name = os.path.join(self.report_dir, 'basic_report.html')
+        self.data_charts_name = os.path.join(self.report_dir, 'data_charts.html')
 
     def load_data(self):
         with open(os.path.join(self.report_dir, 'log.json'), 'r', encoding='utf8') as fp:
@@ -52,21 +56,64 @@ class Report:
         return data_dict
 
     def generate_report(self):
+        # get basic test data
         params = self.load_data()
+
+        # get activity count data
+        activity_count = self.activity_count(params)
         # copy css and js from templates to report dir.
         css_dir = os.path.join(self.report_dir, 'css')
         js_dir = os.path.join(self.report_dir, 'js')
+        img_dir = os.path.join(self.report_dir, 'img')
         os.mkdir(css_dir)
         os.mkdir(js_dir)
-        src_css_dir = os.path.join(os.path.dirname(__file__), 'templates', 'css')
-        src_js_dir = os.path.join(os.path.dirname(__file__), 'templates', 'js')
+        os.mkdir(img_dir)
+
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        src_css_dir = os.path.join(template_dir, 'css')
+        src_js_dir = os.path.join(template_dir, 'js')
+        src_img_dir = os.path.join(template_dir, 'img')
+
         for src_css_file in os.listdir(src_css_dir):
             shutil.copy(os.path.join(src_css_dir, src_css_file), css_dir)
         for src_js_file in os.listdir(src_js_dir):
             shutil.copy(os.path.join(src_js_dir, src_js_file), js_dir)
-        report_content = self.template.render(activities=params)
-        with open(self.report_name, 'w', encoding='utf-8') as f:
-            f.write(report_content)
+        for src_img_file in os.listdir(src_img_dir):
+            shutil.copy(os.path.join(src_img_dir, src_img_file), img_dir)
+
+        # copy index html
+        index_html_path = os.path.join(template_dir, 'index.html')
+        shutil.copy(index_html_path, self.report_dir)
+
+        # render basic report
+        with open(self.basic_report_name, 'w', encoding='utf-8') as f:
+            content = self.basic_template.render(activities=params)
+            f.write(content)
+
+        # render activity count report
+        with open(self.data_charts_name, 'w', encoding='utf-8') as f:
+            content = self.data_charts_template.render(activity_chart=activity_count)
+            f.write(content)
+
+    @staticmethod
+    def activity_count(param):
+        data = {'pie': [], 'histogram': {'xAxis': [], 'count': []}}
+        activity_short_re = re.compile(r'\.([a-zA-Z0-9]+)Activity$')
+        for name, value in param.items():
+            short_name = activity_short_re.search(name)
+            if short_name is None:
+                short_name = name
+            else:
+               short_name = short_name.groups()[0]
+            activity = {}
+            total = value['pass'] + value['error']
+            activity['name'] = name
+            activity['value'] = total
+            data['pie'].append(activity)
+            data['histogram']['xAxis'].append(short_name)
+            data['histogram']['count'].append(total)
+        data_json = json.dumps(data)
+        return data_json
 
     def clear_expired_report(self, expired_day):
         root_reports = os.path.join(self.report_dir, '..')
@@ -189,10 +236,10 @@ class GenerateJson:
 
 
 
-
 if __name__ == '__main__':
-    path = os.path.join(os.path.dirname(__file__), 'reports', '20210302150845_G000N60784240G4M')
-    Report.rec_remove_file(path)
+    path = os.path.join(os.path.dirname(__file__), 'reports', '20210401195612_FA7B91A04880')
+    r = Report(report_dir=path)
+    r.clear_expired_report(expired_day=5)
 
 
 

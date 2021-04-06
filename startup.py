@@ -16,6 +16,7 @@ from config_util import Config
 from log import log
 from report_util import GenerateJson, Report
 
+
 class FilePathInvalid(Exception):
     '''
     file path is not valid or can't find this fiel
@@ -108,6 +109,7 @@ def cmd_parse():
     necessary_param.update(optional_param)
     return necessary_param
 
+
 def main():
     print_spider()
     try:
@@ -122,7 +124,7 @@ def main():
         max_workers = int(params_dict.get('max_workers', 5))
 
         futures_map = dict()
-        config = Config(config_path)
+        config = Config(config_path=config_path)
         devices_list = list()
         platform = config.platformName
         if platform == 'Android':
@@ -151,8 +153,12 @@ def main():
 
                     # generate report
                     report = Report(report_dir=report_dir)
-                    report.clear_expired_report(expired_day=3)
-                    report.generate_report()
+                    try:
+                        report.clear_expired_report(expired_day=3)
+                    except Exception as exc:
+                        log.error(exc)
+                    finally:
+                        report.generate_report()
 
             kill_adb_server()
             log.warning("All test end.")

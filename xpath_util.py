@@ -4,12 +4,17 @@
 # @data  : 2021/2/10
 import re
 import uuid
-from collections import deque
+from collections import deque, namedtuple
+
+from log  import log
 
 
 class XpathParseIteration:
+    node_obj = namedtuple('node_obj', ['node', 'node_uid'])
 
-    def __init__(self, page):
+    def __init__(self, page, first_elements_config, last_elements_config):
+        LAST_ELEMENTS = last_elements_config
+        FIRST_ELEMENTS = first_elements_config
         # record last click elements.
         self.last = []
         self.page = page
@@ -26,14 +31,33 @@ class XpathParseIteration:
         # create a post order list
         self.__postorder = deque()
         stack = deque()
-        stack.append(self.root)
+        # push root node to stack.
+        node_uid = ElementUid(node_attrib=self.root.attrib, activity=self.page.current_activity)
+        node = self.node_obj(self.root, node_uid)
+        stack.append(node)
+        last_elements = []
+        first_elements = []
         while stack:
             node = stack.pop()
-            self.__postorder.append(node)
-            for child in node:
-                child.set('uuid', str(uuid.uuid1()))
-                self.__routing[child] = node
-                stack.append(child)
+
+            if self.__re_search(node.node_uid.uid, FIRST_ELEMENTS):
+                # log.debug(f"find first element {node.node_uid.uid}")
+                first_elements.append(node)
+            elif self.__re_search(node.node_uid.uid, LAST_ELEMENTS):
+                # log.debug(f"find last element {node.node_uid.uid}")
+                last_elements.append(node)
+
+            else:
+                self.__postorder.append(node)
+                for child in node.node:
+                    child.set('uuid', str(uuid.uuid1()))
+                    self.__routing[child] = node.node
+                    node_uid = ElementUid(node_attrib=child.attrib, activity=self.page.current_activity)
+                    child_obj = self.node_obj(child, node_uid)
+                    stack.append(child_obj)
+        else:
+            self.__postorder.extendleft(last_elements)
+            self.__postorder.extend(first_elements)
 
     def __iter__(self):
         return self
@@ -48,8 +72,7 @@ class XpathParseIteration:
 
     def xpath(self, node):
         node_xpath_fmt = '//{}//{}'
-        node_uid = ElementUid(node_attrib=node.attrib, activity=self.page.current_activity)
-        v_node = node
+        v_node, node_uid = node.node, node.node_uid
         k_node = self.__routing[v_node]
         if v_node is not None and k_node is not None:
             if k_node not in self.__xpath_mapping.keys():
@@ -95,6 +118,13 @@ class XpathParseIteration:
 
     def __eq__(self, other):
         return self.page == other
+
+    @staticmethod
+    def __re_search(target, _list):
+        for item in _list:
+            if re.search(r'{}'.format(item), target):
+                return True
+        return False
 
 
 class ElementUid:
