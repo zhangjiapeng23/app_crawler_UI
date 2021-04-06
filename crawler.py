@@ -25,7 +25,7 @@ class Crawler:
                                         'element_uid'])
 
     def __init__(self, config: Config, timer):
-        self.max_page_depth = config.config.get('max_depth', 5)
+        self.max_page_depth = config.config.get('max_depth', 6)
         crash_traceback = config.config.get('max_screen')
         self.__crash_traceback = deque(maxlen=crash_traceback) if crash_traceback else deque(maxlen=10)
         self.seen = set()
@@ -36,6 +36,7 @@ class Crawler:
         self.white_elements = self.__config.white_elements()
         self.base_activities = self.__config.base_activities()
         self.last_elements = self.__config.last_elements()
+        self.first_elements = self.__config.first_elements()
         self.selected_elements = self.__config.selected_elements()
         self.driver = Appium(desired_caps=config.appium_desired_caps())
         self.__current_page = None
@@ -88,7 +89,14 @@ class Crawler:
         current_page_source = self.get_page_source()
         if not current_page_source:
             self.driver.click_device_back()
-            return self.get_page_info()
+            # test: if after click back, still timeout, relaunch app.
+            try:
+                self.__get_page_source()
+            except FunctionTimedOut:
+                self.driver.launch_app()
+                log.warning('Get page source timeout, relaunch app.')
+            finally:
+                return self.get_page_info()
         else:
             current_activity = self.driver.get_current_activity()
             page = PageParse(current_page_source, current_activity)
@@ -140,7 +148,9 @@ class Crawler:
         '''
         if not isinstance(xpath_generator, XpathParseIteration):
             # if not a XpathParse instance, try to structure a XpathParse instance.
-            self.__xpath_generator = XpathParseIteration(xpath_generator)
+            self.__xpath_generator = XpathParseIteration(xpath_generator,
+                                                         first_elements_config=self.first_elements,
+                                                         last_elements_config=self.last_elements)
         else:
             self.__xpath_generator = xpath_generator
 
@@ -167,15 +177,15 @@ class Crawler:
 
             # check the node whether is in black list.
             if self.__is_black_element(node_uid.uid):
-                log.warning("Current element in black list, not click.")
+                log.warning("Current element in black list, not click. {}.".format(node_uid.uid))
                 self.seen.add(node_uid.uid)
                 continue
 
             # check the node whether is in last click list.
-            if self.__is_last_element(node_uid.uid):
-                # log.warning("Current element in last list, check later.")
-                self.__xpath_generator.last.append((xpath, node_uid))
-                continue
+            # if self.__is_last_element(node_uid.uid):
+            #     # log.warning("Current element in last list, check later.")
+            #     self.__xpath_generator.last.append((xpath, node_uid))
+            #     continue
 
             res = self.__click(xpath, node_uid)
             # if res not None, represent page change, return to run, else click next one
@@ -184,17 +194,17 @@ class Crawler:
 
         else:
             # click last click node.
-            for xpath, node_uid in self.__xpath_generator.last:
-                res = self.__click(xpath, node_uid)
-                if res:
-                    yield res
-            else:
-                # try to scroll up page to find more content
-                self.driver.load_long_page_content(times=2)
-                self.driver.pull_refresh_page()
-                current_page = self.get_page_info()
-                if current_page != self.__xpath_generator:
-                    yield current_page, self.__xpath_generator
+            # for xpath, node_uid in self.__xpath_generator.last:
+            #     res = self.__click(xpath, node_uid)
+            #     if res:
+            #         yield res
+            # else:
+            # try to scroll up page to find more content
+            self.driver.load_long_page_content(times=2)
+            self.driver.pull_refresh_page()
+            current_page = self.get_page_info()
+            if current_page != self.__xpath_generator:
+                yield current_page, self.__xpath_generator
 
         log.debug("Current page crawler over!")
         if not self.__is_base_activity(self.driver.get_current_activity()):
@@ -230,13 +240,10 @@ class Crawler:
                         # add to white element seen set
                         self.__white_element_seen.add(node_uid.uid)
 
-
-
                     # add random actions
                     self.driver.monkey_actions()
 
                     self.__after_click()
-
                     # judge page is change
                     current_page = self.get_page_info()
                     if current_page != self.__xpath_generator:
