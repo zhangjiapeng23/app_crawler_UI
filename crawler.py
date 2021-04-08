@@ -23,8 +23,10 @@ from report_util import LogAndroid
 class Crawler:
     event_record = namedtuple('event', ['time', 'before_click', 'after_click', 'activity', 'xpath', 'status',
                                         'element_uid'])
+    travel_mode = None
 
     def __init__(self, config: Config, timer):
+        XpathParseIteration.travel_mode = self.travel_mode
         self.max_page_depth = config.config.get('max_depth', 6)
         crash_traceback = config.config.get('max_screen')
         self.__crash_traceback = deque(maxlen=crash_traceback) if crash_traceback else deque(maxlen=10)
@@ -38,6 +40,7 @@ class Crawler:
         self.last_elements = self.__config.last_elements()
         self.first_elements = self.__config.first_elements()
         self.selected_elements = self.__config.selected_elements()
+        self.after_crawl_page = self.__config.after_crawl_page()
         self.driver = Appium(desired_caps=config.appium_desired_caps())
         self.__current_page = None
         self.__record = list()
@@ -155,53 +158,22 @@ class Crawler:
             self.__xpath_generator = xpath_generator
 
         for xpath, node_uid in self.__xpath_generator:
-            # check the node whether has been clicked
-            if node_uid.uid in self.seen:
-                # log.info('element {} is seen, skip it.'.format(node_uid.uid))
+            if not self.__before_click(node_uid):
                 continue
-
-            # check the node whether is in white list seen
-            # prevent always click white element.
-            if node_uid.uid in self.__white_element_seen:
-                # generate a random number to decide this node remove from seen.
-                if random() <= 0.3:
-                    self.__white_element_seen.remove(node_uid.uid)
-                    log.info('Remove an element from white seen.')
-                continue
-
-            # check the node whether is in selected list.
-            if not self.__is_selected_element(node_uid.uid):
-                # log.warning("Current element not in selected list, not click.\n{}".format(node_uid.uid))
-                self.seen.add(node_uid.uid)
-                continue
-
-            # check the node whether is in black list.
-            if self.__is_black_element(node_uid.uid):
-                log.warning("Current element in black list, not click. {}.".format(node_uid.uid))
-                self.seen.add(node_uid.uid)
-                continue
-
-            # check the node whether is in last click list.
-            # if self.__is_last_element(node_uid.uid):
-            #     # log.warning("Current element in last list, check later.")
-            #     self.__xpath_generator.last.append((xpath, node_uid))
-            #     continue
 
             res = self.__click(xpath, node_uid)
-            # if res not None, represent page change, return to run, else click next one
+
+            # if res not None, represent page change, return to run,
+            # else click next one
             if res is not None:
                 yield res
 
         else:
-            # click last click node.
-            # for xpath, node_uid in self.__xpath_generator.last:
-            #     res = self.__click(xpath, node_uid)
-            #     if res:
-            #         yield res
-            # else:
-            # try to scroll up page to find more content
-            self.driver.load_long_page_content(times=2)
-            self.driver.pull_refresh_page()
+            # when all page elements is clicked. trigger after crawl page event.
+            # self.driver.load_long_page_content(times=2)
+            # self.driver.pull_refresh_page()
+            self.__after_crawl_page()
+
             current_page = self.get_page_info()
             if current_page != self.__xpath_generator:
                 yield current_page, self.__xpath_generator
@@ -212,6 +184,31 @@ class Crawler:
         else:
             log.warning("Current page is base activity.")
         yield 'END'
+
+    def __before_click(self, node_uid: ElementUid):
+        # check the node whether has been clicked
+        if node_uid.uid in self.seen:
+            # log.info('element {} is seen, skip it.'.format(node_uid.uid))
+            return 0
+        # check the node whether is in white list seen
+        # prevent always click white element.
+        if node_uid.uid in self.__white_element_seen:
+            # generate a random number to decide this node remove from seen.
+            if random() <= 0.3:
+                self.__white_element_seen.remove(node_uid.uid)
+                log.info('Remove an element from white seen.')
+            return 0
+        # check the node whether is in selected list.
+        if not self.__is_selected_element(node_uid.uid):
+            # log.warning("Current element not in selected list, not click.\n{}".format(node_uid.uid))
+            self.seen.add(node_uid.uid)
+            return 0
+        # check the node whether is in black list.
+        if self.__is_black_element(node_uid.uid):
+            log.warning("Current element in black list, not click. {}.".format(node_uid.uid))
+            self.seen.add(node_uid.uid)
+            return 0
+        return 1
 
     def __click(self, xpath, node_uid: ElementUid):
         if xpath != '' and xpath[-1] != '*':
@@ -259,6 +256,16 @@ class Crawler:
             self.driver.click_device_back()
         else:
             self.__return_white_app()
+
+    def __after_crawl_page(self):
+        for event in self.after_crawl_page:
+            try:
+                action = getattr(self.driver, event.get('name', 'None'))
+            except AttributeError as exc:
+                log.error(f"Not support {event.get('name', 'None')} event, {exc}")
+            else:
+                for _ in range(event.get('times', 0)):
+                    action()
 
     def __return_white_app(self):
         for count in range(3):

@@ -6,6 +6,7 @@
 import os
 import re
 from collections import defaultdict
+from typing import List
 
 import yaml
 
@@ -120,3 +121,7 @@ class Config:
             # set default
             selected_elements = ['.*Text.*', '.*Image.*', '.*Button.*', '.*CheckBox.*']
         return selected_elements
+
+    def after_crawl_page(self) -> List:
+        after_crawl_page = self.config.get("afterCrawlPage", list())
+        return after_crawl_page
