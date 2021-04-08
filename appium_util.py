@@ -26,29 +26,42 @@ class Appium:
     def driver(self):
         return self.__driver
 
-    def scroll_up_page(self, duration=400):
-        screen_size = self.__driver.get_window_size()
-        x_start = x_end = screen_size['width'] / 2
-        y_start = screen_size['height'] * 0.80
-        y_end = screen_size['height'] * 0.30
+    def __swipe_action(self, **kwargs):
         try:
-            self.__driver.swipe(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
+            self.__driver.swipe(**kwargs)
         except InvalidSessionIdException as err:
             raise err
         except WebDriverException as err:
             log.error("Swipe action cannot be performed! {}".format(err))
 
+    def scroll_up_page(self, duration=400):
+        screen_size = self.__driver.get_window_size()
+        x_start = x_end = screen_size['width'] / 2
+        # set 0.5 is in order to not touch keyboard if that show.
+        y_start = screen_size['height'] * 0.55
+        y_end = screen_size['height'] * 0.20
+        self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
+
     def scroll_down_page(self, duration=400):
         screen_size = self.__driver.get_window_size()
         x_start = x_end = screen_size['width'] / 2
-        y_end = screen_size['height'] * 0.70
-        y_start = screen_size['height'] * 0.30
-        try:
-            self.__driver.swipe(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
-        except InvalidSessionIdException as err:
-            raise err
-        except WebDriverException as err:
-            log.error("Swipe action cannot be performed! {}".format(err))
+        y_end = screen_size['height'] * 0.55
+        y_start = screen_size['height'] * 0.20
+        self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
+
+    def scroll_left_page(self, duration=400):
+        screen_size = self.__driver.get_window_size()
+        y_start = y_end = screen_size['height'] / 2
+        x_start = screen_size['width'] * 0.80
+        x_end = screen_size['width'] * 0.20
+        self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
+
+    def scroll_right_page(self, duration=400):
+        screen_size = self.__driver.get_window_size()
+        y_start = y_end = screen_size['height'] / 2
+        x_end = screen_size['width'] * 0.80
+        x_start = screen_size['width'] * 0.20
+        self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
 
     def pull_refresh_page(self):
         self.scroll_down_page()
