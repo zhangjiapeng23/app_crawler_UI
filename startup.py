@@ -98,12 +98,15 @@ def cmd_parse():
 
     # other param
     optional_param = dict()
-    max_worker_nums = re.search(r'-[m|M]([^-]*)', cmd_string)
-    run_time = re.search(r'-[t|T]([^-]*)', cmd_string)
+    max_worker_nums = re.search(r'-[n]([^-]*)', cmd_string, re.IGNORECASE)
+    run_time = re.search(r'-[t]([^-]*)', cmd_string, re.IGNORECASE)
+    travel_mode = re.search(r'-[m]([^-]*)', cmd_string, re.IGNORECASE)
     if max_worker_nums and max_worker_nums.group(1):
         optional_param['max_workers'] = max_worker_nums.group(1)
     if run_time and run_time.group(1):
         optional_param['timer'] = run_time.group(1)
+    if travel_mode and travel_mode.group(1):
+        optional_param['travel_mode'] = travel_mode.group(1)
 
     # merger params
     necessary_param.update(optional_param)
@@ -122,6 +125,15 @@ def main():
         timer = int(params_dict.get('timer', 2))
         # default 5 threads.
         max_workers = int(params_dict.get('max_workers', 5))
+        # default dfs
+        travel_mode = params_dict.get('travel_mode', 'mixture')
+        support_mode = {'mixture', 'dfs', 'bfs'}
+
+        if travel_mode not in support_mode:
+            _origin_mode = travel_mode
+            travel_mode = support_mode.pop()
+            log.warning(f"{_origin_mode} travel mode is not support, set travel mode to {travel_mode}")
+        Crawler.travel_mode = travel_mode
 
         futures_map = dict()
         config = Config(config_path=config_path)

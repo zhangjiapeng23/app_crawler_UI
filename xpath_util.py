@@ -2,21 +2,19 @@
 # -*- encoding: utf-8 -*-
 # @author: James Zhang
 # @data  : 2021/2/10
+import random
 import re
 import uuid
 from collections import deque, namedtuple
 
-from log  import log
-
 
 class XpathParseIteration:
     node_obj = namedtuple('node_obj', ['node', 'node_uid'])
+    travel_mode = None
 
     def __init__(self, page, first_elements_config, last_elements_config):
-        LAST_ELEMENTS = last_elements_config
-        FIRST_ELEMENTS = first_elements_config
-        # record last click elements.
-        self.last = []
+        self.LAST_ELEMENTS = last_elements_config
+        self.FIRST_ELEMENTS = first_elements_config
         self.page = page
         # page_root: curent page xml root node.
         self.root = page.current_page_root
@@ -28,8 +26,18 @@ class XpathParseIteration:
         self.root.set('uuid', str(uuid.uuid1()))
         # root not have parent node
         self.__routing[self.root] = None
+        if self.travel_mode == 'mixture':
+            self.nodes_queue = self.__depth_first() if random.random() > 0.2 else self.__breath_first()
+        elif self.travel_mode == 'dfs':
+            self.nodes_queue = self.__depth_first()
+        elif self.travel_mode == 'bfs':
+            self.nodes_queue = self.__breath_first()
+        else:
+            raise TypeError(f'Not support this travel mode: {self.travel_mode}')
+
+    def __depth_first(self):
         # create a post order list
-        self.__postorder = deque()
+        postorder = deque()
         stack = deque()
         # push root node to stack.
         node_uid = ElementUid(node_attrib=self.root.attrib, activity=self.page.current_activity)
@@ -39,16 +47,14 @@ class XpathParseIteration:
         first_elements = []
         while stack:
             node = stack.pop()
-
-            if self.__re_search(node.node_uid.uid, FIRST_ELEMENTS):
+            if self.__re_search(node.node_uid.uid, self.FIRST_ELEMENTS):
                 # log.debug(f"find first element {node.node_uid.uid}")
                 first_elements.append(node)
-            elif self.__re_search(node.node_uid.uid, LAST_ELEMENTS):
+            elif self.__re_search(node.node_uid.uid, self.LAST_ELEMENTS):
                 # log.debug(f"find last element {node.node_uid.uid}")
                 last_elements.append(node)
-
             else:
-                self.__postorder.append(node)
+                postorder.append(node)
                 for child in node.node:
                     child.set('uuid', str(uuid.uuid1()))
                     self.__routing[child] = node.node
@@ -56,25 +62,56 @@ class XpathParseIteration:
                     child_obj = self.node_obj(child, node_uid)
                     stack.append(child_obj)
         else:
-            self.__postorder.extendleft(last_elements)
-            self.__postorder.extend(first_elements)
+            postorder.extendleft(last_elements)
+            postorder.extend(first_elements)
+        return postorder
+
+    def __breath_first(self):
+        breath_first = deque()
+        queue = deque()
+        # push root node to queue.
+        node_uid = ElementUid(node_attrib=self.root.attrib, activity=self.page.current_activity)
+        node = self.node_obj(self.root, node_uid)
+        queue.append(node)
+        last_elements = []
+        first_elements = []
+        while queue:
+            node = queue.popleft()
+            if self.__re_search(node.node_uid.uid, self.FIRST_ELEMENTS):
+                # log.debug(f"find first element {node.node_uid.uid}")
+                first_elements.append(node)
+            elif self.__re_search(node.node_uid.uid, self.LAST_ELEMENTS):
+                # log.debug(f"find last element {node.node_uid.uid}")
+                last_elements.append(node)
+            else:
+                breath_first.appendleft(node)
+                for child in node.node:
+                    child.set('uuid', str(uuid.uuid1()))
+                    self.__routing[child] = node.node
+                    node_uid = ElementUid(node_attrib=child.attrib, activity=self.page.current_activity)
+                    child_obj = self.node_obj(child, node_uid)
+                    queue.append(child_obj)
+        else:
+            breath_first.extendleft(last_elements)
+            breath_first.extend(first_elements)
+        return breath_first
 
     def __iter__(self):
         return self
 
     def __next__(self):
         try:
-            node = self.__postorder.pop()
+            node = self.nodes_queue.pop()
         except IndexError as exc:
             raise StopIteration(exc)
         else:
             return self.xpath(node)
 
     def xpath(self, node):
-        node_xpath_fmt = '//{}//{}'
         v_node, node_uid = node.node, node.node_uid
         k_node = self.__routing[v_node]
         if v_node is not None and k_node is not None:
+            node_xpath_fmt = '//{}//{}'
             if k_node not in self.__xpath_mapping.keys():
                 k_xpath = self.xpath_parsing(k_node)
                 self.__xpath_mapping[k_node] = k_xpath
@@ -82,6 +119,11 @@ class XpathParseIteration:
                 k_xpath = self.__xpath_mapping[k_node]
             v_xpath = self.xpath_parsing(v_node)
             node_xpath = node_xpath_fmt.format(k_xpath, v_xpath)
+            return node_xpath, node_uid
+        elif v_node is not None:
+            node_xpath_fmt = '//{}'
+            v_xpath = self.xpath_parsing(v_node)
+            node_xpath = node_xpath_fmt.format(v_xpath)
             return node_xpath, node_uid
         else:
             return next(self)
