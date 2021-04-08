@@ -196,7 +196,6 @@ class ElementUid:
             self.__bounds = ((int(position_list[0]), int(position_list[1])),
                               (int(position_list[2]), int(position_list[3])))
 
-
     @property
     def uid(self):
         # format is “activity:classxxxxtest010....”

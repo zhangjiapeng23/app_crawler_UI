@@ -97,8 +97,9 @@ class Report:
 
     @staticmethod
     def activity_count(param):
-        data = {'pie': [], 'histogram': {'xAxis': [], 'count': []}}
+        data = {'pie': [], 'histogram': {'xAxis': [], 'count': []}, 'event_total': 0}
         activity_short_re = re.compile(r'\.([a-zA-Z0-9]+)Activity$')
+        event_total = 0
         for name, value in param.items():
             short_name = activity_short_re.search(name)
             if short_name is None:
@@ -107,11 +108,13 @@ class Report:
                short_name = short_name.groups()[0]
             activity = {}
             total = value['pass'] + value['error']
-            activity['name'] = name
+            event_total += total
+            activity['name'] = short_name
             activity['value'] = total
             data['pie'].append(activity)
             data['histogram']['xAxis'].append(short_name)
             data['histogram']['count'].append(total)
+        data['event_total'] = event_total
         data_json = json.dumps(data)
         return data_json
 
