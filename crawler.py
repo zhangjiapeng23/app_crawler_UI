@@ -11,6 +11,7 @@ from random import random
 
 from func_timeout import func_set_timeout
 from func_timeout.exceptions import FunctionTimedOut
+from selenium.common.exceptions import WebDriverException
 
 from page_parse import PageParse
 from config_util import Config
@@ -26,6 +27,7 @@ class Crawler:
     travel_mode = None
 
     def __init__(self, config: Config, timer):
+        self._start_time = datetime.datetime.now()
         XpathParseIteration.travel_mode = self.travel_mode
         self.max_page_depth = config.config.get('max_depth', 6)
         crash_traceback = config.config.get('max_screen')
@@ -41,10 +43,12 @@ class Crawler:
         self.first_elements = self.__config.first_elements()
         self.selected_elements = self.__config.selected_elements()
         self.after_crawl_page = self.__config.after_crawl_page()
-        self.driver = Appium(desired_caps=config.appium_desired_caps())
+        self.driver = None
+        self.init_appium()
         self.__current_page = None
         self.__record = list()
-        self.__timer = timer
+        self.__timer = timer * 60
+        log.info("Total time: {} seconds".format(self.__timer))
         self.__white_element_seen = set()
 
         # init device crash log, remove cache crash log.
@@ -69,7 +73,12 @@ class Crawler:
 
     @func_set_timeout(5)
     def __get_page_source(self):
+        if self._start_time + datetime.timedelta(seconds=self.timer) <= datetime.datetime.now():
+            self.quit()
         return self.driver.get_page_source()
+
+    def init_appium(self):
+        self.driver = Appium(desired_caps=self.__config.appium_desired_caps())
 
     def get_page_source(self):
         count = 2
@@ -80,6 +89,10 @@ class Crawler:
                 return self.__current_page
             except FunctionTimedOut:
                 count -= 1
+            except WebDriverException as e:
+                log.error(e)
+                log.warning('refresh appium driver')
+                self.init_appium()
         log.error('Get page source timeout.')
         return None
 
@@ -98,6 +111,9 @@ class Crawler:
             except FunctionTimedOut:
                 self.driver.launch_app()
                 log.warning('Get page source timeout, relaunch app.')
+            except WebDriverException:
+                log.warning('refresh appium driver')
+                self.init_appium()
             finally:
                 return self.get_page_info()
         else:
@@ -326,6 +342,7 @@ class Crawler:
         return self.__timer
 
     def quit(self):
+        log.warning('Appium quit')
         self.driver.quit()
 
     @property

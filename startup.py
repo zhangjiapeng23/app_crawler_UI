@@ -5,16 +5,14 @@
 import os
 import re
 import sys
-import threading
 from concurrent import futures
-
-from selenium.common.exceptions import InvalidSessionIdException
 
 from device_info_util import get_serial_numbers_android, get_serial_numbers_ios, kill_adb_server
 from crawler import Crawler
 from config_util import Config
 from log import log
 from report_util import GenerateJson, Report
+from appium_util import QuitAppiumException
 
 
 class FilePathInvalid(Exception):
@@ -57,20 +55,24 @@ def print_spider():
         print(' ' * (18 + i * 2) + '*' + ' ' * (25 - i * 4) + '*')
 
 
-def execute_timer(total_time, func):
-    timer = threading.Timer(interval=total_time*60, function=func)
-    log.info("Timer start work!!")
-    timer.start()
+# def execute_timer(total_time, func):
+#     timer = threading.Timer(interval=total_time*60, function=func)
+#     log.info("Timer start work!! total time: {}".format(total_time))
+#     timer.start()
 
+# def execute_timer(total_time, func):
+#     start_time = datetime.now()
+#     while start_time + timedelta(seconds=total_time) < datetime.now():
+#         time.sleep(10)
+#     func()
 
 def performer(config_path, serial, timer):
     config = Config(config_path, udid=serial)
     spider = Crawler(config, timer)
-    execute_timer(timer, spider.quit)
     try:
         while True:
             spider.run()
-    except InvalidSessionIdException:
+    except QuitAppiumException:
         # return test result.
         return spider.report_path, spider.record
         log.error('test end!')

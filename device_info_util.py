@@ -42,7 +42,7 @@ def get_serial_numbers_android():
     serials = []
     cmd = 'adb devices'
     for i in execute_cmd(cmd):
-        log.error(i)
+        log.info(i)
         if any(('List of devices' in i,'daemon' in i, 'offline' in i,
                'unauthorized' in i, len(i) < 5, 'killing' in i)):
             pass

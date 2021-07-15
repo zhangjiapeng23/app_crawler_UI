@@ -61,7 +61,7 @@ class Config:
         desired_caps['autoGrantPermissions'] = self.config.get('autoGrantPermissions')
         # desired_caps['dontStopAppOnReset'] = 'true'
         desired_caps['skipDeviceInitialization'] = 'true'
-        desired_caps['unicodeKeyboard'] = 'true'
+        # desired_caps['unicodeKeyboard'] = 'true'
         desired_caps['resetKeyboard'] = 'true'
         desired_caps['settings[waitForIdleTimeout]'] = 1
 

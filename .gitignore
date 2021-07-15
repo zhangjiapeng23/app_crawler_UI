@@ -6,3 +6,4 @@ config/NBA*
 *screenshot/
 reports/
 test/testdata/pageSource/
+logs/

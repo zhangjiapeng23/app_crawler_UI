@@ -10,9 +10,23 @@ import time
 import cv2
 import numpy as np
 from appium import webdriver
-from selenium.common.exceptions import InvalidSessionIdException, WebDriverException
+from selenium.common.exceptions import WebDriverException
 
 from log import log
+
+
+class QuitAppiumException(Exception):
+    '''
+    When initiative quit appium raise, like call driver.quit(),
+    this Exception to make app crawler stop.
+    '''
+
+    def __init__(self, msg='Quit appium, close this session.'):
+        self.msg = msg
+
+    def __str__(self):
+        exception_msg = "Message: %s\n" % self.msg
+        return exception_msg
 
 
 class Appium:
@@ -29,35 +43,41 @@ class Appium:
     def __swipe_action(self, **kwargs):
         try:
             self.__driver.swipe(**kwargs)
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Swipe action cannot be performed! {}".format(err))
 
     def scroll_up_page(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         x_start = x_end = screen_size['width'] / 2
         # set 0.5 is in order to not touch keyboard if that show.
-        y_start = screen_size['height'] * 0.55
-        y_end = screen_size['height'] * 0.20
+        y_start = screen_size['height'] * 0.60
+        y_end = screen_size['height'] * 0.30
         self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
 
     def scroll_down_page(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         x_start = x_end = screen_size['width'] / 2
-        y_end = screen_size['height'] * 0.55
-        y_start = screen_size['height'] * 0.20
+        y_end = screen_size['height'] * 0.60
+        y_start = screen_size['height'] * 0.30
         self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
 
     def scroll_left_page(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         y_start = y_end = screen_size['height'] / 2
         x_start = screen_size['width'] * 0.80
         x_end = screen_size['width'] * 0.20
         self.__swipe_action(start_x=x_start, end_x=x_end, start_y=y_start, end_y=y_end, duration=duration)
 
     def scroll_right_page(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         y_start = y_end = screen_size['height'] / 2
         x_end = screen_size['width'] * 0.80
         x_start = screen_size['width'] * 0.20
@@ -73,7 +93,9 @@ class Appium:
         log.info("Scroll down page to show more content!!")
 
     def monkey_tap(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         positions = []
         width = screen_size['width']
         height = screen_size['height']
@@ -86,13 +108,13 @@ class Appium:
             # click event
             self.__driver.tap(positions=positions, duration=duration)
             log.info("random swipe click!")
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Click action cannot be performed! {}".format(err))
 
     def monkey_swipe_left(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         width = screen_size['width']
         height = screen_size['height']
         x = random.randint(0, width)
@@ -102,13 +124,13 @@ class Appium:
             # swipe left event
             self.__driver.swipe(start_x=x, start_y=y, end_x=x_end, end_y=y, duration=duration)
             log.info("random swipe left!")
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Swipe action cannot be performed! {}".format(err))
 
     def monkey_swipe_right(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         width = screen_size['width']
         height = screen_size['height']
         x = random.randint(0, width)
@@ -118,13 +140,13 @@ class Appium:
             # swipe left event
             self.__driver.swipe(start_x=x, start_y=y, end_x=x_end, end_y=y, duration=duration)
             log.info("random swipe right!")
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Swipe action cannot be performed! {}".format(err))
 
     def monkey_swipe_up(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         width = screen_size['width']
         height = screen_size['height']
         x = random.randint(0, width)
@@ -133,13 +155,13 @@ class Appium:
         try:
             self.__driver.swipe(start_x=x, start_y=y, end_x=x, end_y=y_end, duration=duration)
             log.info("random swipe up!")
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Swipe action cannot be performed! {}".format(err))
 
     def monkey_swipe_down(self, duration=400):
-        screen_size = self.__driver.get_window_size()
+        screen_size = self.get_screen_size()
+        if screen_size is None:
+            return
         width = screen_size['width']
         height = screen_size['height']
         x = random.randint(0, width)
@@ -149,8 +171,6 @@ class Appium:
         try:
             self.__driver.swipe(start_x=x, start_y=y, end_x=x, end_y=y_end, duration=duration)
             log.info("random swipe down!")
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Swipe action cannot be performed! {}".format(err))
 
@@ -159,8 +179,6 @@ class Appium:
         log.info("Put app to background {} seconds.".format(time))
         try:
             self.__driver.background_app(time)
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error(err)
 
@@ -195,8 +213,6 @@ class Appium:
             self.__driver.get_screenshot_as_file(path)
             self.__driver.get_screenshot_as_png()
             self.screenshot_mark(img_path=path, position=position)
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Screenshot failed! {}".format(err))
 
@@ -205,8 +221,6 @@ class Appium:
             # get screen base64.
             origin = self.__driver.get_screenshot_as_base64()
             return self.screenshot_mark_as_base64(origin, position)
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Screenshot failed! {}".format(err))
 
@@ -234,17 +248,9 @@ class Appium:
                 f.write(base64.b64decode(screenshot_base64))
         return screenshot_file
 
-
-
-
-
-
-
     def launch_app(self):
         try:
             self.__driver.launch_app()
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error('Launch app error! {}'.format(err))
 
@@ -252,8 +258,6 @@ class Appium:
         for count in range(3):
             try:
                 current_activity = self.__driver.current_activity
-            except InvalidSessionIdException as err:
-                raise err
             except WebDriverException as err:
                 log.error("get activity error! {}".format(err))
                 current_activity = None
@@ -266,17 +270,16 @@ class Appium:
     def get_page_source(self):
         try:
             return self.__driver.page_source
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Get current page source error! {}".format(err))
+            # call get_page_source(), should deal WebDriverException, this error will be raise
+            raise err
+
 
     def get_current_package(self):
         for count in range(3):
             try:
                 current_package = self.__driver.current_package
-            except InvalidSessionIdException as err:
-                raise err
             except WebDriverException as err:
                 log.error("Get package error!! {}".format(err))
                 current_package = None
@@ -291,8 +294,6 @@ class Appium:
             # self.__driver.keyevent(4)
             # self.__driver.back()
             self.__driver.press_keycode(4)
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Click device back button error! {}".format(err))
 
@@ -300,19 +301,25 @@ class Appium:
         elements = []
         try:
             elements = self.__driver.find_elements_by_xpath(xpath)
-        except InvalidSessionIdException as err:
-            raise err
         except WebDriverException as err:
             log.error("Find element error! {}".format(err))
         finally:
             return elements
 
+    def get_screen_size(self):
+        try:
+            screen_size = self.__driver.get_window_size()
+            return screen_size
+        except WebDriverException as err:
+            log.error("Get screen size error! {}".format(err))
+        finally:
+            return None
+
     def quit(self):
         try:
             self.__driver.quit()
             log.info("Clear this test session!")
-        except InvalidSessionIdException as err:
-            raise err
+            raise QuitAppiumException
         except WebDriverException as err:
             log.error("Quit session error! {}".format(err))
 

@@ -138,6 +138,7 @@ class Report:
                 os.remove(os.path.join(_dir, file))
             os.rmdir(_dir)
 
+
 class LogAndroid:
 
     def __init__(self, udid):
@@ -234,9 +235,6 @@ class GenerateJson:
                 left = mid + 1
         else:
             return ans
-
-
-
 
 
 if __name__ == '__main__':
